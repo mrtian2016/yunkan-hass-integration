@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Yunkan",
+        "description": "Enter the address of your Yunkan server and an account to sign in with. Use the nginx entry (usually port 23406), not an internal port.",
+        "data": {
+          "base_url": "Server URL",
+          "username": "Username",
+          "password": "Password",
+          "verify_ssl": "Verify SSL certificate"
+        },
+        "data_description": {
+          "base_url": "For example http://192.168.1.10:23406 or https://cam.example.com",
+          "verify_ssl": "Turn off for a self-signed certificate on your LAN"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate Yunkan",
+        "description": "Enter the current password for {username} on {base_url}.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect. Check the server URL and that the server is running.",
+      "invalid_auth": "Invalid username or password.",
+      "setup_required": "The Yunkan server has not finished its first-run setup. Open the Yunkan web interface and create an admin account, then try again.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This Yunkan server is already configured.",
+      "single_instance_allowed": "Only one Yunkan server can be configured.",
+      "reauth_successful": "Re-authentication was successful."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": { "name": "Online" },
+      "person": { "name": "Person" },
+      "vehicle": { "name": "Vehicle" },
+      "animal": { "name": "Animal" },
+      "package": { "name": "Package" },
+      "face": { "name": "Face" },
+      "fall": { "name": "Fall" },
+      "cry": { "name": "Baby cry" }
+    },
+    "sensor": {
+      "last_event": { "name": "Last event" }
+    },
+    "switch": {
+      "detection": { "name": "AI detection" }
+    },
+    "image": {
+      "latest_event": { "name": "Latest event" }
+    },
+    "update": {
+      "server": { "name": "Server" }
+    }
+  },
+  "services": {
+    "ptz": {
+      "name": "PTZ control",
+      "description": "Moves a pan/tilt/zoom camera in a direction for a short time.",
+      "fields": {
+        "direction": {
+          "name": "Direction",
+          "description": "The direction to move the camera."
+        },
+        "speed": {
+          "name": "Speed",
+          "description": "Movement speed from 0 to 1."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "How long to move before stopping, in seconds. Use 0 to keep moving until another command."
+        }
+      }
+    },
+    "tts_broadcast": {
+      "name": "Voice broadcast",
+      "description": "Speaks a message on the camera's speaker using text-to-speech (Pro).",
+      "fields": {
+        "message": {
+          "name": "Message",
+          "description": "The text to speak."
+        },
+        "voice": {
+          "name": "Voice",
+          "description": "Optional voice name; leave empty for the server default."
+        },
+        "rate": {
+          "name": "Rate",
+          "description": "Optional speech rate, for example +10%."
+        },
+        "pitch": {
+          "name": "Pitch",
+          "description": "Optional pitch, for example +2Hz."
+        }
+      }
+    },
+    "snapshot": {
+      "name": "Take snapshot",
+      "description": "Captures a fresh snapshot from the camera and saves it to a file.",
+      "fields": {
+        "filename": {
+          "name": "File name",
+          "description": "Full path to write the JPEG to. The folder must be in allowlist_external_dirs."
+        }
+      }
+    }
+  },
+  "issues": {
+    "pro_required": {
+      "title": "Yunkan Pro required",
+      "description": "This action needs a Yunkan Pro license, but the server is on the free tier (status: {status}). AI detection and voice broadcast remain unavailable until the server is upgraded."
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "domain": "yunkan",
+  "name": "Yunkan",
+  "codeowners": ["@yunkan"],
+  "config_flow": true,
+  "dependencies": ["http", "camera", "stream", "media_source"],
+  "documentation": "https://yun-kan.com/docs/home-assistant",
+  "integration_type": "hub",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/yunkan/yunkan-hass-integration/issues",
+  "loggers": ["custom_components.yunkan"],
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

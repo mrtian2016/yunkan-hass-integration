@@ -1,0 +1,75 @@
+ptz:
+  target:
+    entity:
+      integration: yunkan
+      domain: camera
+  fields:
+    direction:
+      required: true
+      selector:
+        select:
+          options:
+            - up
+            - down
+            - left
+            - right
+            - up_left
+            - up_right
+            - down_left
+            - down_right
+            - zoom_in
+            - zoom_out
+    speed:
+      default: 0.5
+      selector:
+        number:
+          min: 0
+          max: 1
+          step: 0.1
+    duration:
+      default: 0.5
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.5
+          unit_of_measurement: s
+
+tts_broadcast:
+  target:
+    entity:
+      integration: yunkan
+      domain: camera
+  fields:
+    message:
+      required: true
+      example: Someone is at the front door
+      selector:
+        text:
+          multiline: true
+    voice:
+      advanced: true
+      selector:
+        text:
+    rate:
+      advanced: true
+      example: "+10%"
+      selector:
+        text:
+    pitch:
+      advanced: true
+      example: "+2Hz"
+      selector:
+        text:
+
+snapshot:
+  target:
+    entity:
+      integration: yunkan
+      domain: camera
+  fields:
+    filename:
+      required: true
+      example: /media/yunkan/{{ entity_id }}_snapshot.jpg
+      selector:
+        text:

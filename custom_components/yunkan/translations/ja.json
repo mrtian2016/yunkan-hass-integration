@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Yunkan に接続",
+        "description": "Yunkan サーバーのアドレスとログインアカウントを入力してください。内部ポートではなく nginx の入口（通常はポート 23406）を使用してください。",
+        "data": {
+          "base_url": "サーバーアドレス",
+          "username": "ユーザー名",
+          "password": "パスワード",
+          "verify_ssl": "SSL 証明書を検証する"
+        },
+        "data_description": {
+          "base_url": "例: http://192.168.1.10:23406 または https://cam.example.com",
+          "verify_ssl": "LAN の自己署名証明書の場合はオフにしてください"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Yunkan に再認証",
+        "description": "{base_url} 上の {username} の現在のパスワードを入力してください。",
+        "data": {
+          "password": "パスワード"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "接続に失敗しました。サーバーアドレスとサーバーが稼働しているか確認してください。",
+      "invalid_auth": "ユーザー名またはパスワードが正しくありません。",
+      "setup_required": "Yunkan サーバーの初回セットアップが完了していません。先に Yunkan の Web 画面で管理者アカウントを作成してから再試行してください。",
+      "unknown": "予期しないエラーが発生しました。"
+    },
+    "abort": {
+      "already_configured": "この Yunkan サーバーは既に設定されています。",
+      "single_instance_allowed": "Yunkan サーバーは 1 台のみ設定できます。",
+      "reauth_successful": "再認証に成功しました。"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": { "name": "オンライン" },
+      "person": { "name": "人物" },
+      "vehicle": { "name": "車両" },
+      "animal": { "name": "動物" },
+      "package": { "name": "荷物" },
+      "face": { "name": "顔" },
+      "fall": { "name": "転倒" },
+      "cry": { "name": "赤ちゃんの泣き声" }
+    },
+    "sensor": {
+      "last_event": { "name": "最新イベント" }
+    },
+    "switch": {
+      "detection": { "name": "AI 検知" }
+    },
+    "image": {
+      "latest_event": { "name": "最新イベント" }
+    },
+    "update": {
+      "server": { "name": "サーバー" }
+    }
+  },
+  "services": {
+    "ptz": {
+      "name": "PTZ 制御",
+      "description": "パン/チルト/ズーム対応カメラを指定方向に短時間動かします。",
+      "fields": {
+        "direction": {
+          "name": "方向",
+          "description": "カメラを動かす方向。"
+        },
+        "speed": {
+          "name": "速度",
+          "description": "0 から 1 の間の移動速度。"
+        },
+        "duration": {
+          "name": "継続時間",
+          "description": "停止するまでの秒数。0 の場合は次の指示まで動き続けます。"
+        }
+      }
+    },
+    "tts_broadcast": {
+      "name": "音声アナウンス",
+      "description": "テキスト読み上げでカメラのスピーカーからメッセージを再生します（Pro）。",
+      "fields": {
+        "message": {
+          "name": "メッセージ",
+          "description": "読み上げるテキスト。"
+        },
+        "voice": {
+          "name": "音声",
+          "description": "任意の音声名。空欄の場合はサーバーの既定値を使用します。"
+        },
+        "rate": {
+          "name": "速度",
+          "description": "任意の読み上げ速度。例: +10%。"
+        },
+        "pitch": {
+          "name": "ピッチ",
+          "description": "任意のピッチ。例: +2Hz。"
+        }
+      }
+    },
+    "snapshot": {
+      "name": "スナップショット",
+      "description": "カメラから最新の画像を取得してファイルに保存します。",
+      "fields": {
+        "filename": {
+          "name": "ファイル名",
+          "description": "JPEG を書き込むフルパス。フォルダーは allowlist_external_dirs に含まれている必要があります。"
+        }
+      }
+    }
+  },
+  "issues": {
+    "pro_required": {
+      "title": "Yunkan Pro が必要です",
+      "description": "この操作には Yunkan Pro ライセンスが必要ですが、サーバーは無料プランです（ステータス: {status}）。アップグレードするまで AI 検知と音声アナウンスは利用できません。"
+    }
+  }
+}

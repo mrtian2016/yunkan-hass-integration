@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "连接云瞰",
+        "description": "填写云瞰服务器地址和登录账号。请使用 nginx 入口（通常为 23406 端口），不要填内部端口。",
+        "data": {
+          "base_url": "服务器地址",
+          "username": "用户名",
+          "password": "密码",
+          "verify_ssl": "校验 SSL 证书"
+        },
+        "data_description": {
+          "base_url": "例如 http://192.168.1.10:23406 或 https://cam.example.com",
+          "verify_ssl": "局域网自签名证书请关闭此项"
+        }
+      },
+      "reauth_confirm": {
+        "title": "重新登录云瞰",
+        "description": "请输入 {username} 在 {base_url} 上的当前密码。",
+        "data": {
+          "password": "密码"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "连接失败。请检查服务器地址，并确认服务器正在运行。",
+      "invalid_auth": "用户名或密码错误。",
+      "setup_required": "云瞰服务器尚未完成首次初始化。请先打开云瞰网页端创建管理员账号，再重试。",
+      "unknown": "发生未知错误。"
+    },
+    "abort": {
+      "already_configured": "该云瞰服务器已配置。",
+      "single_instance_allowed": "只能配置一个云瞰服务器。",
+      "reauth_successful": "重新登录成功。"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": { "name": "在线" },
+      "person": { "name": "人" },
+      "vehicle": { "name": "车辆" },
+      "animal": { "name": "动物" },
+      "package": { "name": "包裹" },
+      "face": { "name": "人脸" },
+      "fall": { "name": "跌倒" },
+      "cry": { "name": "婴儿哭声" }
+    },
+    "sensor": {
+      "last_event": { "name": "最近事件" }
+    },
+    "switch": {
+      "detection": { "name": "AI 识别" }
+    },
+    "image": {
+      "latest_event": { "name": "最新事件" }
+    },
+    "update": {
+      "server": { "name": "服务器" }
+    }
+  },
+  "services": {
+    "ptz": {
+      "name": "云台控制",
+      "description": "让支持云台的摄像头朝某个方向短时移动。",
+      "fields": {
+        "direction": {
+          "name": "方向",
+          "description": "摄像头移动的方向。"
+        },
+        "speed": {
+          "name": "速度",
+          "description": "移动速度，0 到 1 之间。"
+        },
+        "duration": {
+          "name": "时长",
+          "description": "移动多少秒后停止。填 0 则持续移动直到下一条指令。"
+        }
+      }
+    },
+    "tts_broadcast": {
+      "name": "语音喊话",
+      "description": "通过文字转语音在摄像头喇叭上播报一段话（Pro 功能）。",
+      "fields": {
+        "message": {
+          "name": "内容",
+          "description": "要播报的文字。"
+        },
+        "voice": {
+          "name": "音色",
+          "description": "可选音色名称；留空则使用服务器默认。"
+        },
+        "rate": {
+          "name": "语速",
+          "description": "可选语速，例如 +10%。"
+        },
+        "pitch": {
+          "name": "音调",
+          "description": "可选音调，例如 +2Hz。"
+        }
+      }
+    },
+    "snapshot": {
+      "name": "抓拍",
+      "description": "从摄像头抓取一张最新画面并保存为文件。",
+      "fields": {
+        "filename": {
+          "name": "文件名",
+          "description": "保存 JPEG 的完整路径。所在目录需在 allowlist_external_dirs 中。"
+        }
+      }
+    }
+  },
+  "issues": {
+    "pro_required": {
+      "title": "需要云瞰 Pro",
+      "description": "此操作需要云瞰 Pro 授权，但当前服务器为免费档（状态：{status}）。升级前 AI 识别与语音喊话不可用。"
+    }
+  }
+}

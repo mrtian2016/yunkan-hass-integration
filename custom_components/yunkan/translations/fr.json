@@ -1,0 +1,120 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connexion à Yunkan",
+        "description": "Saisissez l'adresse de votre serveur Yunkan et un compte pour vous connecter. Utilisez l'entrée nginx (généralement le port 23406), pas un port interne.",
+        "data": {
+          "base_url": "URL du serveur",
+          "username": "Nom d'utilisateur",
+          "password": "Mot de passe",
+          "verify_ssl": "Vérifier le certificat SSL"
+        },
+        "data_description": {
+          "base_url": "Par exemple http://192.168.1.10:23406 ou https://cam.example.com",
+          "verify_ssl": "Désactivez pour un certificat auto-signé sur votre réseau local"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Ré-authentification Yunkan",
+        "description": "Saisissez le mot de passe actuel de {username} sur {base_url}.",
+        "data": {
+          "password": "Mot de passe"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Échec de la connexion. Vérifiez l'URL du serveur et qu'il est bien démarré.",
+      "invalid_auth": "Nom d'utilisateur ou mot de passe invalide.",
+      "setup_required": "Le serveur Yunkan n'a pas terminé sa configuration initiale. Ouvrez d'abord l'interface web de Yunkan et créez un compte administrateur, puis réessayez.",
+      "unknown": "Erreur inattendue."
+    },
+    "abort": {
+      "already_configured": "Ce serveur Yunkan est déjà configuré.",
+      "single_instance_allowed": "Un seul serveur Yunkan peut être configuré.",
+      "reauth_successful": "Ré-authentification réussie."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": { "name": "En ligne" },
+      "person": { "name": "Personne" },
+      "vehicle": { "name": "Véhicule" },
+      "animal": { "name": "Animal" },
+      "package": { "name": "Colis" },
+      "face": { "name": "Visage" },
+      "fall": { "name": "Chute" },
+      "cry": { "name": "Pleurs de bébé" }
+    },
+    "sensor": {
+      "last_event": { "name": "Dernier événement" }
+    },
+    "switch": {
+      "detection": { "name": "Détection IA" }
+    },
+    "image": {
+      "latest_event": { "name": "Dernier événement" }
+    },
+    "update": {
+      "server": { "name": "Serveur" }
+    }
+  },
+  "services": {
+    "ptz": {
+      "name": "Contrôle PTZ",
+      "description": "Déplace brièvement une caméra motorisée dans une direction.",
+      "fields": {
+        "direction": {
+          "name": "Direction",
+          "description": "La direction dans laquelle déplacer la caméra."
+        },
+        "speed": {
+          "name": "Vitesse",
+          "description": "Vitesse de déplacement de 0 à 1."
+        },
+        "duration": {
+          "name": "Durée",
+          "description": "Durée du déplacement avant l'arrêt, en secondes. 0 pour continuer jusqu'à la prochaine commande."
+        }
+      }
+    },
+    "tts_broadcast": {
+      "name": "Annonce vocale",
+      "description": "Diffuse un message sur le haut-parleur de la caméra via la synthèse vocale (Pro).",
+      "fields": {
+        "message": {
+          "name": "Message",
+          "description": "Le texte à énoncer."
+        },
+        "voice": {
+          "name": "Voix",
+          "description": "Nom de voix facultatif ; laissez vide pour la valeur par défaut du serveur."
+        },
+        "rate": {
+          "name": "Débit",
+          "description": "Débit de parole facultatif, par exemple +10%."
+        },
+        "pitch": {
+          "name": "Hauteur",
+          "description": "Hauteur facultative, par exemple +2Hz."
+        }
+      }
+    },
+    "snapshot": {
+      "name": "Capturer une image",
+      "description": "Capture une image récente de la caméra et l'enregistre dans un fichier.",
+      "fields": {
+        "filename": {
+          "name": "Nom du fichier",
+          "description": "Chemin complet où écrire le JPEG. Le dossier doit figurer dans allowlist_external_dirs."
+        }
+      }
+    }
+  },
+  "issues": {
+    "pro_required": {
+      "title": "Yunkan Pro requis",
+      "description": "Cette action nécessite une licence Yunkan Pro, mais le serveur est en version gratuite (statut : {status}). La détection IA et l'annonce vocale restent indisponibles jusqu'à la mise à niveau du serveur."
+    }
+  }
+}
