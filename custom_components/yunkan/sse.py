@@ -97,10 +97,18 @@ class YunkanSSEClient:
 
     async def _connect_once(self) -> None:
         """Open one stream and pump frames until it closes."""
-        ticket = await self._client.async_sse_ticket()
+        ticket = await self._client.async_sse_ticket()  # also refreshes the token
         url = self._client.sse_stream_url(ticket)
         timeout = aiohttp.ClientTimeout(total=None, sock_connect=15, sock_read=_READ_TIMEOUT)
-        async with self._client._session.get(url, timeout=timeout) as resp:  # noqa: SLF001
+        # The ticket query authenticates the stream, but a reverse proxy may route
+        # header-less /api requests away from the API, so send the bearer token too
+        # (an aiohttp client, unlike a browser EventSource, can set headers).
+        headers = (
+            {"Authorization": f"Bearer {self._client.token}"} if self._client.token else {}
+        )
+        async with self._client._session.get(  # noqa: SLF001
+            url, headers=headers, timeout=timeout
+        ) as resp:
             if resp.status != 200:
                 raise YunkanApiError(f"SSE stream returned HTTP {resp.status}")
             self._connected = True

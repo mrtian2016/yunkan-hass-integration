@@ -30,8 +30,14 @@ def test_known_labels_map_to_expected_categories() -> None:
 
 def test_unmapped_labels_are_absent() -> None:
     """Fine-grained labels that must not become sensors are not in the map."""
-    for label in ("gesture", "plate", "motion", "package_arrival", "zone_enter"):
+    for label in ("gesture", "plate", "motion", "zone_enter", "weather"):
         assert label not in EVENT_CATEGORY_MAP
+
+
+def test_package_arrival_maps_to_package() -> None:
+    """The real package event types drive the package sensor."""
+    assert EVENT_CATEGORY_MAP["package_arrival"] == "package"
+    assert EVENT_CATEGORY_MAP["package_removal"] == "package"
 
 
 def test_device_classes_are_valid() -> None:

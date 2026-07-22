@@ -24,7 +24,13 @@ from homeassistant.components.camera import (
     WebRTCError,
     WebRTCSendMessage,
 )
-from homeassistant.components.camera.webrtc import RTCIceServer
+
+try:
+    # Home Assistant vendors the ICE server model from webrtc-models.
+    from webrtc_models import RTCIceServer
+except ImportError:  # older cores re-exported it from the camera component
+    from homeassistant.components.camera.webrtc import RTCIceServer
+
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -105,26 +111,27 @@ class YunkanCamera(YunkanCameraEntity, Camera):
             return None
         return build_hls_url(self.coordinator.client.base_url, app, stream, token)
 
-    async def async_get_webrtc_client_configuration(self) -> WebRTCClientConfiguration:
-        """Provide ICE servers and ask the frontend to gather candidates upfront."""
-        config = await super().async_get_webrtc_client_configuration()
-        try:
-            grant = await self._async_grant()
-        except YunkanApiError:
-            grant = {}
-        ice_servers = [
-            RTCIceServer(
-                urls=server["urls"],
-                username=server.get("username"),
-                credential=server.get("credential"),
-            )
-            for server in grant.get("ice_servers", [])
-            if server.get("urls")
-        ]
-        if ice_servers:
-            config.configuration.ice_servers.extend(ice_servers)
-        # WHEP is a single offer/answer exchange, so gather candidates first.
-        config.get_candidates_upfront = True
+    def _async_get_webrtc_client_configuration(self) -> WebRTCClientConfiguration:
+        """Return the WebRTC client config (sync hook), adding cached ICE servers.
+
+        Home Assistant calls this synchronously, so any ICE servers must come
+        from a live-grant cached by a prior async call rather than a fresh fetch.
+        On a LAN the server returns no ICE servers and direct candidates suffice.
+        """
+        config = super()._async_get_webrtc_client_configuration()
+        grant = self._grant
+        if grant:
+            ice_servers = [
+                RTCIceServer(
+                    urls=server["urls"],
+                    username=server.get("username"),
+                    credential=server.get("credential"),
+                )
+                for server in grant.get("ice_servers", [])
+                if server.get("urls")
+            ]
+            if ice_servers:
+                config.configuration.ice_servers.extend(ice_servers)
         return config
 
     async def async_handle_async_webrtc_offer(

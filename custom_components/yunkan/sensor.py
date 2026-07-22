@@ -22,6 +22,7 @@ from . import YunkanConfigEntry
 from .const import EVENT_CATEGORY_MAP
 from .coordinator import YunkanCoordinator, signal_event
 from .entity import YunkanCameraEntity
+from .event_utils import event_attributes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -91,11 +92,6 @@ class YunkanLastEventSensor(YunkanCameraEntity, SensorEntity):
         if when is not None:
             self._attr_native_value = when
         event_type = event.get("event_type", "")
-        self._attr_extra_state_attributes = {
-            "event_id": event.get("id"),
-            "event_type": event_type,
-            "category": EVENT_CATEGORY_MAP.get(event_type),
-            "confidence": event.get("confidence"),
-            "summary": event.get("summary_en") or event.get("summary_zh"),
-            "title": event.get("title"),
-        }
+        attrs = event_attributes(event)
+        attrs["category"] = EVENT_CATEGORY_MAP.get(event_type)
+        self._attr_extra_state_attributes = attrs

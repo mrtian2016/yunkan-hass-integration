@@ -29,6 +29,7 @@ from .const import (
     EVENT_OFF_DELAY,
 )
 from .coordinator import YunkanCoordinator, signal_event
+from .event_utils import event_attributes
 from .entity import YunkanCameraEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -110,12 +111,7 @@ class YunkanEventSensor(YunkanCameraEntity, BinarySensorEntity):
         if EVENT_CATEGORY_MAP.get(event.get("event_type", "")) != self._category:
             return
         self._attr_is_on = True
-        self._attr_extra_state_attributes = {
-            "event_id": event.get("id"),
-            "event_type": event.get("event_type"),
-            "confidence": event.get("confidence"),
-            "event_time": event.get("event_time"),
-        }
+        self._attr_extra_state_attributes = event_attributes(event)
         self._cancel_off_timer()
         self._cancel_off = async_call_later(self.hass, EVENT_OFF_DELAY, self._turn_off)
         self.async_write_ha_state()

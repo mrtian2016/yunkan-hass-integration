@@ -85,7 +85,16 @@ class YunkanCoordinator(DataUpdateCoordinator[YunkanData]):
         except YunkanConnectionError as err:
             raise UpdateFailed(str(err)) from err
 
-        data = YunkanData(cameras={cam["id"]: cam for cam in cameras if cam.get("id")})
+        # Only surface enabled, non-archived cameras as entities.
+        data = YunkanData(
+            cameras={
+                cam["id"]: cam
+                for cam in cameras
+                if cam.get("id")
+                and cam.get("enabled", True)
+                and not cam.get("archived_at")
+            }
+        )
 
         # License and version are best-effort: a hiccup must not drop the cameras.
         try:

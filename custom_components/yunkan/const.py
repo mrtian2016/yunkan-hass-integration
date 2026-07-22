@@ -104,6 +104,9 @@ EVENT_CATEGORY_MAP: Final[dict[str, str]] = {
     "cat": "animal",
     "bird": "animal",
     "package": "package",
+    # The detector emits arrival/removal; both drive the package sensor.
+    "package_arrival": "package",
+    "package_removal": "package",
     "face": "face",
     "fall": "fall",
     "cry": "cry",
