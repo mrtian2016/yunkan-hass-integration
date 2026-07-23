@@ -63,12 +63,14 @@ server — the integration stores nothing but the connection details.
 
 [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mrtian2016&repository=yunkan-hass-integration&category=integration)
 
-Click the button above to open this repository in HACS, install **Yunkan** and
-restart Home Assistant. Or add it manually:
+Yunkan isn't in the default HACS store yet, so it installs as a **custom
+repository** — the button above sets that up for you: click it to open the repo
+in HACS, install **Yunkan**, then restart Home Assistant. Or add it manually:
 
-1. In HACS, add this repository as a **custom repository** (category
-   *Integration*).
-2. Install **Yunkan** and restart Home Assistant.
+1. In HACS, open the three-dot menu → **Custom repositories**, add
+   `https://github.com/mrtian2016/yunkan-hass-integration` with category
+   **Integration**.
+2. Search for **Yunkan**, install it, and restart Home Assistant.
 3. Go to **Settings → Devices & Services → Add Integration → Yunkan** and enter
    your server URL, username and password.
 

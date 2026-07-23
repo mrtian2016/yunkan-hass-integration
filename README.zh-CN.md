@@ -52,11 +52,12 @@
 
 [![在 HACS 中打开](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mrtian2016&repository=yunkan-hass-integration&category=integration)
 
-点击上方按钮即可在 HACS 中打开本仓库，安装 **Yunkan** 后重启 Home Assistant。或手动
-添加：
+Yunkan 还没上架 HACS 默认商店，所以以**自定义仓库**方式安装——上方按钮会帮你完成：
+点击即可在 HACS 中打开本仓库，安装 **Yunkan** 后重启 Home Assistant。或手动添加：
 
-1. 在 HACS 中把本仓库添加为 **自定义仓库**（类别选 *Integration*）。
-2. 安装 **Yunkan** 并重启 Home Assistant。
+1. 在 HACS 里点右上角三点菜单 →「自定义仓库」，填入
+   `https://github.com/mrtian2016/yunkan-hass-integration`，类别选 **Integration**。
+2. 搜索 **Yunkan** 安装，然后重启 Home Assistant。
 3. 进入 **设置 → 设备与服务 → 添加集成 → Yunkan**，填入服务器地址、用户名和密码。
 
 ### 手动安装

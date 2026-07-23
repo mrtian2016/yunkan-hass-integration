@@ -11,7 +11,7 @@
           "verify_ssl": "Vérifier le certificat SSL"
         },
         "data_description": {
-          "base_url": "Par exemple http://192.168.1.10:23406 ou https://cam.example.com",
+          "base_url": "L'adresse d'entrée principale du serveur, avec le port (généralement 23406).",
           "verify_ssl": "Désactivez pour un certificat auto-signé sur votre réseau local"
         }
       },

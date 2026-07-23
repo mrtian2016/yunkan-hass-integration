@@ -11,7 +11,7 @@
           "verify_ssl": "SSL 証明書を検証する"
         },
         "data_description": {
-          "base_url": "例: http://192.168.1.10:23406 または https://cam.example.com",
+          "base_url": "サーバーのメイン入口アドレス（ポート込み、通常 23406）。",
           "verify_ssl": "LAN の自己署名証明書の場合はオフにしてください"
         }
       },

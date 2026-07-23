@@ -11,7 +11,7 @@
           "verify_ssl": "驗證 SSL 憑證"
         },
         "data_description": {
-          "base_url": "例如 http://192.168.1.10:23406 或 https://cam.example.com",
+          "base_url": "伺服器的主入口位址，含連接埠（通常 23406）。",
           "verify_ssl": "區域網路自簽憑證請關閉此項"
         }
       },

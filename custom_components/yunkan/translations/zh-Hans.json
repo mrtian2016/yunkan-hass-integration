@@ -11,7 +11,7 @@
           "verify_ssl": "校验 SSL 证书"
         },
         "data_description": {
-          "base_url": "例如 http://192.168.1.10:23406 或 https://cam.example.com",
+          "base_url": "服务器的主入口地址，含端口（通常 23406）。",
           "verify_ssl": "局域网自签名证书请关闭此项"
         }
       },
