@@ -23,7 +23,14 @@ from .api import (
     YunkanConnectionError,
     YunkanSetupRequiredError,
 )
-from .const import CONF_BASE_URL, CONF_PASSWORD, CONF_USERNAME, CONF_VERIFY_SSL, DOMAIN
+from .const import (
+    CONF_BASE_URL,
+    CONF_PASSWORD,
+    CONF_USERNAME,
+    CONF_VERIFY_SSL,
+    DEFAULT_VERIFY_SSL,
+    DOMAIN,
+)
 from .coordinator import YunkanCoordinator
 from .entity import server_device_info
 from .services import async_setup_services
@@ -64,7 +71,9 @@ def _async_prune_stale_devices(
 
 async def async_setup_entry(hass: HomeAssistant, entry: YunkanConfigEntry) -> bool:
     """Set up Yunkan from a config entry."""
-    session = async_get_clientsession(hass, verify_ssl=entry.data.get(CONF_VERIFY_SSL, False))
+    session = async_get_clientsession(
+        hass, verify_ssl=entry.data.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL)
+    )
     client = YunkanApiClient(
         session,
         entry.data[CONF_BASE_URL],

@@ -11,5 +11,5 @@
   "loggers": ["custom_components.yunkan"],
   "requirements": [],
   "single_config_entry": true,
-  "version": "0.1.1"
+  "version": "0.3.0"
 }

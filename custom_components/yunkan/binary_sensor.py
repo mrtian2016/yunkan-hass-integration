@@ -10,6 +10,7 @@ delay, mirroring the server's MQTT-discovery behaviour.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any
 
 from homeassistant.components.binary_sensor import (
@@ -28,7 +29,7 @@ from .const import (
     EVENT_CATEGORY_MAP,
     EVENT_OFF_DELAY,
 )
-from .coordinator import YunkanCoordinator, signal_event
+from .coordinator import YunkanCoordinator, signal_event, signal_tracks
 from .event_utils import event_attributes
 from .entity import YunkanCameraEntity
 
@@ -45,6 +46,7 @@ async def async_setup_entry(
     entities: list[BinarySensorEntity] = []
     for camera_id in coordinator.data.cameras:
         entities.append(YunkanOnlineSensor(coordinator, camera_id))
+        entities.append(YunkanMotionSensor(coordinator, camera_id))
         entities.extend(
             YunkanEventSensor(coordinator, camera_id, category)
             for category in EVENT_CATEGORIES
@@ -75,13 +77,86 @@ class YunkanOnlineSensor(YunkanCameraEntity, BinarySensorEntity):
         return self.coordinator.last_update_success and bool(self._camera)
 
 
+class YunkanMotionSensor(YunkanCameraEntity, BinarySensorEntity):
+    """Generic motion sensor — ON while anything is tracked or a motion event fires."""
+
+    _attr_device_class = BinarySensorDeviceClass.MOTION
+    _attr_translation_key = "motion"
+
+    def __init__(self, coordinator: YunkanCoordinator, camera_id: str) -> None:
+        """Initialise the motion sensor."""
+        super().__init__(coordinator, camera_id)
+        self._attr_unique_id = f"{self._entry_id}_{camera_id}_motion"
+        self._event_until: float = 0.0
+        self._cancel_off: CALLBACK_TYPE | None = None
+
+    @property
+    def is_on(self) -> bool:
+        """ON while any object is tracked or a recent motion event holds it."""
+        if any(self.coordinator.tracks_counts.get(self._camera_id, {}).values()):
+            return True
+        return self._event_until > time.monotonic()
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to the event and occupancy signals."""
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, signal_event(self._entry_id), self._handle_event
+            )
+        )
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, signal_tracks(self._entry_id), self._handle_tracks
+            )
+        )
+        self.async_on_remove(self._cancel_off_timer)
+
+    @callback
+    def _handle_event(self, event: dict[str, Any]) -> None:
+        """Hold ON on any detection event for this camera."""
+        if event.get("camera_id") != self._camera_id:
+            return
+        if not event.get("event_type"):
+            return
+        self._event_until = time.monotonic() + EVENT_OFF_DELAY
+        self._cancel_off_timer()
+        self._cancel_off = async_call_later(self.hass, EVENT_OFF_DELAY, self._reeval)
+        self.async_write_ha_state()
+
+    @callback
+    def _handle_tracks(self, camera_id: str) -> None:
+        """React to a live occupancy change for this camera."""
+        if camera_id == self._camera_id:
+            self.async_write_ha_state()
+
+    @callback
+    def _reeval(self, _now: Any) -> None:
+        """Re-evaluate state when the event hold expires."""
+        self._cancel_off = None
+        self.async_write_ha_state()
+
+    @callback
+    def _cancel_off_timer(self) -> None:
+        """Cancel a pending re-evaluation timer."""
+        if self._cancel_off is not None:
+            self._cancel_off()
+            self._cancel_off = None
+
+
 class YunkanEventSensor(YunkanCameraEntity, BinarySensorEntity):
-    """Momentary occupancy sensor for one detection category, driven by SSE."""
+    """Occupancy sensor for one detection category.
+
+    Turns ON immediately on a matching event (carrying rich attributes such as
+    the recognised name or plate) and stays ON while live tracks show the
+    category present. Categories without a live track (baby-cry, package) fall
+    back to a momentary pulse that auto-clears after a short delay.
+    """
 
     def __init__(
         self, coordinator: YunkanCoordinator, camera_id: str, category: str
     ) -> None:
-        """Initialise the category event sensor."""
+        """Initialise the category occupancy sensor."""
         super().__init__(coordinator, camera_id)
         self._category = category
         label, device_class, icon = CATEGORY_META[category]
@@ -89,16 +164,29 @@ class YunkanEventSensor(YunkanCameraEntity, BinarySensorEntity):
         self._attr_translation_key = category
         self._attr_device_class = BinarySensorDeviceClass(device_class)
         self._attr_icon = icon
-        self._attr_is_on = False
         self._attr_extra_state_attributes: dict[str, Any] = {}
+        self._event_until: float = 0.0
         self._cancel_off: CALLBACK_TYPE | None = None
 
+    @property
+    def is_on(self) -> bool:
+        """ON while the category is present or a recent event still holds it."""
+        counts = self.coordinator.tracks_counts.get(self._camera_id, {})
+        if counts.get(self._category, 0) > 0:
+            return True
+        return self._event_until > time.monotonic()
+
     async def async_added_to_hass(self) -> None:
-        """Subscribe to the real-time event signal."""
+        """Subscribe to the real-time event and occupancy signals."""
         await super().async_added_to_hass()
         self.async_on_remove(
             async_dispatcher_connect(
                 self.hass, signal_event(self._entry_id), self._handle_event
+            )
+        )
+        self.async_on_remove(
+            async_dispatcher_connect(
+                self.hass, signal_tracks(self._entry_id), self._handle_tracks
             )
         )
         self.async_on_remove(self._cancel_off_timer)
@@ -110,22 +198,27 @@ class YunkanEventSensor(YunkanCameraEntity, BinarySensorEntity):
             return
         if EVENT_CATEGORY_MAP.get(event.get("event_type", "")) != self._category:
             return
-        self._attr_is_on = True
         self._attr_extra_state_attributes = event_attributes(event)
+        self._event_until = time.monotonic() + EVENT_OFF_DELAY
         self._cancel_off_timer()
-        self._cancel_off = async_call_later(self.hass, EVENT_OFF_DELAY, self._turn_off)
+        self._cancel_off = async_call_later(self.hass, EVENT_OFF_DELAY, self._reeval)
         self.async_write_ha_state()
 
     @callback
-    def _turn_off(self, _now: Any) -> None:
-        """Auto-reset the sensor after the off delay."""
+    def _handle_tracks(self, camera_id: str) -> None:
+        """React to a live occupancy change for this camera."""
+        if camera_id == self._camera_id:
+            self.async_write_ha_state()
+
+    @callback
+    def _reeval(self, _now: Any) -> None:
+        """Re-evaluate state when the event hold expires."""
         self._cancel_off = None
-        self._attr_is_on = False
         self.async_write_ha_state()
 
     @callback
     def _cancel_off_timer(self) -> None:
-        """Cancel a pending auto-off timer."""
+        """Cancel a pending re-evaluation timer."""
         if self._cancel_off is not None:
             self._cancel_off()
             self._cancel_off = None

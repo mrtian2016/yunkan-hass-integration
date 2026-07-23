@@ -1,0 +1,126 @@
+blueprint:
+  name: Yunkan camera notification
+  description: >
+    Send a mobile notification with a snapshot when a Yunkan camera detects a
+    person, vehicle, animal, package, face, fall or baby cry. Uses the Yunkan
+    device triggers and the camera's snapshot.
+  domain: automation
+  source_url: https://github.com/yunkan/yunkan-hass-integration/blob/main/blueprints/automation/yunkan/camera_notification.yaml
+  input:
+    camera_device:
+      name: Camera
+      description: The Yunkan camera to watch.
+      selector:
+        device:
+          integration: yunkan
+          entity:
+            domain: camera
+    notify_device:
+      name: Mobile device
+      description: The phone/tablet (Home Assistant companion app) to notify.
+      selector:
+        device:
+          integration: mobile_app
+    detections:
+      name: Detections
+      description: Which detections should notify.
+      default:
+        - person_detected
+        - vehicle_detected
+        - animal_detected
+        - package_detected
+        - face_detected
+        - fall_detected
+        - cry_detected
+      selector:
+        select:
+          multiple: true
+          options:
+            - label: Person
+              value: person_detected
+            - label: Vehicle
+              value: vehicle_detected
+            - label: Animal
+              value: animal_detected
+            - label: Package
+              value: package_detected
+            - label: Face
+              value: face_detected
+            - label: Fall
+              value: fall_detected
+            - label: Baby cry
+              value: cry_detected
+    cooldown:
+      name: Cooldown (seconds)
+      description: Minimum time between notifications for this camera.
+      default: 30
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: seconds
+          mode: box
+
+mode: single
+max_exceeded: silent
+
+trigger:
+  - platform: device
+    domain: yunkan
+    device_id: !input camera_device
+    type: person_detected
+    id: person_detected
+  - platform: device
+    domain: yunkan
+    device_id: !input camera_device
+    type: vehicle_detected
+    id: vehicle_detected
+  - platform: device
+    domain: yunkan
+    device_id: !input camera_device
+    type: animal_detected
+    id: animal_detected
+  - platform: device
+    domain: yunkan
+    device_id: !input camera_device
+    type: package_detected
+    id: package_detected
+  - platform: device
+    domain: yunkan
+    device_id: !input camera_device
+    type: face_detected
+    id: face_detected
+  - platform: device
+    domain: yunkan
+    device_id: !input camera_device
+    type: fall_detected
+    id: fall_detected
+  - platform: device
+    domain: yunkan
+    device_id: !input camera_device
+    type: cry_detected
+    id: cry_detected
+
+variables:
+  detections: !input detections
+  camera_device: !input camera_device
+  camera_entity: >
+    {{ device_entities(camera_device) | select('match', '^camera\\.') | list | first }}
+  camera_name: "{{ device_attr(camera_device, 'name') }}"
+
+condition:
+  - condition: template
+    value_template: "{{ trigger.id in detections }}"
+
+action:
+  - delay: "00:00:01"
+  - service: "notify.mobile_app_{{ device_attr(notify_device, 'name') | slugify }}"
+    data:
+      title: "{{ camera_name }}"
+      message: >
+        {{ trigger.event.get('summary')
+           or (trigger.event.get('name') and (trigger.event.get('name') ~ ' detected'))
+           or (trigger.category | capitalize ~ ' detected') }}
+      data:
+        image: "/api/camera_proxy/{{ camera_entity }}"
+        tag: "yunkan_{{ camera_device }}"

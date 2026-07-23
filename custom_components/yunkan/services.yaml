@@ -5,7 +5,6 @@ ptz:
       domain: camera
   fields:
     direction:
-      required: true
       selector:
         select:
           options:
@@ -19,6 +18,10 @@ ptz:
             - down_right
             - zoom_in
             - zoom_out
+    preset:
+      example: home
+      selector:
+        text:
     speed:
       default: 0.5
       selector:
@@ -73,3 +76,25 @@ snapshot:
       example: /media/yunkan/{{ entity_id }}_snapshot.jpg
       selector:
         text:
+
+export:
+  target:
+    entity:
+      integration: yunkan
+      domain: camera
+  fields:
+    start:
+      required: true
+      selector:
+        datetime:
+    end:
+      required: true
+      selector:
+        datetime:
+    playback_factor:
+      default: realtime
+      selector:
+        select:
+          options:
+            - realtime
+            - timelapse_30x

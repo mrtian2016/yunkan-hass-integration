@@ -37,26 +37,148 @@
   },
   "entity": {
     "binary_sensor": {
-      "online": { "name": "En ligne" },
-      "person": { "name": "Personne" },
-      "vehicle": { "name": "Véhicule" },
-      "animal": { "name": "Animal" },
-      "package": { "name": "Colis" },
-      "face": { "name": "Visage" },
-      "fall": { "name": "Chute" },
-      "cry": { "name": "Pleurs de bébé" }
+      "online": {
+        "name": "En ligne"
+      },
+      "person": {
+        "name": "Personne"
+      },
+      "vehicle": {
+        "name": "Véhicule"
+      },
+      "animal": {
+        "name": "Animal"
+      },
+      "package": {
+        "name": "Colis"
+      },
+      "face": {
+        "name": "Visage"
+      },
+      "fall": {
+        "name": "Chute"
+      },
+      "cry": {
+        "name": "Pleurs de bébé"
+      },
+      "motion": {
+        "name": "Mouvement"
+      }
     },
     "sensor": {
-      "last_event": { "name": "Dernier événement" }
+      "last_event": {
+        "name": "Dernier événement"
+      },
+      "person_count": {
+        "name": "Nombre de personnes"
+      },
+      "vehicle_count": {
+        "name": "Nombre de véhicules"
+      },
+      "animal_count": {
+        "name": "Nombre d'animaux"
+      },
+      "package_count": {
+        "name": "Nombre de colis"
+      },
+      "recognized_face": {
+        "name": "Visage reconnu"
+      },
+      "recognized_plate": {
+        "name": "Plaque reconnue"
+      }
     },
     "switch": {
-      "detection": { "name": "Détection IA" }
+      "detection": {
+        "name": "Détection IA"
+      },
+      "recording": {
+        "name": "Enregistrement"
+      },
+      "detect_object": {
+        "name": "Détection d'objets"
+      },
+      "detect_audio": {
+        "name": "Détection audio"
+      },
+      "detect_face": {
+        "name": "Détection de visage"
+      },
+      "detect_plate": {
+        "name": "Détection de plaque"
+      },
+      "detect_pose": {
+        "name": "Détection de posture"
+      },
+      "detect_gesture": {
+        "name": "Détection de gestes"
+      },
+      "detect_package": {
+        "name": "Détection de colis"
+      },
+      "ptz_autotrack": {
+        "name": "Suivi automatique"
+      },
+      "global_detect_object": {
+        "name": "Détection d'objets (globale)"
+      },
+      "global_detect_audio": {
+        "name": "Détection audio (globale)"
+      },
+      "global_detect_face": {
+        "name": "Détection de visage (globale)"
+      },
+      "global_detect_plate": {
+        "name": "Détection de plaque (globale)"
+      },
+      "global_detect_pose": {
+        "name": "Détection de posture (globale)"
+      },
+      "global_detect_gesture": {
+        "name": "Détection de gestes (globale)"
+      },
+      "global_detect_package": {
+        "name": "Détection de colis (globale)"
+      },
+      "global_detect_motion": {
+        "name": "Détection de mouvement (globale)"
+      }
     },
     "image": {
-      "latest_event": { "name": "Dernier événement" }
+      "latest_event": {
+        "name": "Dernier événement"
+      },
+      "latest_person": {
+        "name": "Dernière personne"
+      },
+      "latest_vehicle": {
+        "name": "Dernier véhicule"
+      },
+      "latest_animal": {
+        "name": "Dernier animal"
+      },
+      "latest_package": {
+        "name": "Dernier colis"
+      },
+      "latest_face": {
+        "name": "Dernier visage"
+      },
+      "latest_fall": {
+        "name": "Dernière chute"
+      },
+      "latest_cry": {
+        "name": "Derniers pleurs"
+      }
     },
     "update": {
-      "server": { "name": "Serveur" }
+      "server": {
+        "name": "Serveur"
+      }
+    },
+    "camera": {
+      "birdseye": {
+        "name": "Vue d'ensemble"
+      }
     }
   },
   "services": {
@@ -75,6 +197,10 @@
         "duration": {
           "name": "Durée",
           "description": "Durée du déplacement avant l'arrêt, en secondes. 0 pour continuer jusqu'à la prochaine commande."
+        },
+        "preset": {
+          "name": "Préréglage",
+          "description": "Aller à une position préréglée."
         }
       }
     },
@@ -109,12 +235,41 @@
           "description": "Chemin complet où écrire le JPEG. Le dossier doit figurer dans allowlist_external_dirs."
         }
       }
+    },
+    "export": {
+      "name": "Exporter l'enregistrement",
+      "description": "Exporte l'enregistrement d'une plage horaire en un clip téléchargeable.",
+      "fields": {
+        "start": {
+          "name": "Début",
+          "description": "Début de la plage à exporter."
+        },
+        "end": {
+          "name": "Fin",
+          "description": "Fin de la plage à exporter."
+        },
+        "playback_factor": {
+          "name": "Facteur de lecture",
+          "description": "temps réel ou accéléré 30x."
+        }
+      }
     }
   },
   "issues": {
     "pro_required": {
       "title": "Yunkan Pro requis",
       "description": "Cette action nécessite une licence Yunkan Pro, mais le serveur est en version gratuite (statut : {status}). La détection IA et l'annonce vocale restent indisponibles jusqu'à la mise à niveau du serveur."
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "person_detected": "Personne détectée",
+      "vehicle_detected": "Véhicule détecté",
+      "animal_detected": "Animal détecté",
+      "package_detected": "Colis détecté",
+      "face_detected": "Visage détecté",
+      "fall_detected": "Chute détectée",
+      "cry_detected": "Pleurs de bébé détectés"
     }
   }
 }

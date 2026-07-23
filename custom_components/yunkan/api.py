@@ -23,18 +23,26 @@ import aiohttp
 from yarl import URL
 
 from .const import (
+    API_BIRDSEYE_GRANT,
     API_CAMERA_SNAPSHOT,
+    API_CAMERA_UPDATE,
     API_CAMERAS,
     API_DETECTION_STATUS,
     API_DETECTION_TOGGLE,
     API_EVENT_DETAIL,
     API_EVENTS,
+    API_EXPORT,
     API_LICENSE_STATUS,
     API_LIVE_GRANT,
+    API_LIVE_TRACKS,
     API_LOGIN,
     API_PTZ_MOVE,
     API_PTZ_PRESET_GOTO,
+    API_PTZ_PRESETS,
     API_PTZ_STOP,
+    API_SETTINGS_ALL,
+    API_SETTINGS_BULK,
+    API_TIMELAPSE,
     API_SETUP_STATUS,
     API_SSE_TICKET,
     API_SYSTEM_VERSION,
@@ -142,6 +150,18 @@ class YunkanApiClient:
                 if self._token is None:
                     await self.async_login()
 
+    async def _reauth(self) -> None:
+        """Re-login once under the lock, coalescing concurrent 401s.
+
+        Uses a double-checked pattern so N concurrent callers that all saw the
+        same stale token trigger a single re-login rather than N.
+        """
+        stale = self._token
+        async with self._auth_lock:
+            if self._token == stale:
+                self._token = None
+                await self.async_login()
+
     # -------------------------------------------------------------- requests
 
     async def _request(
@@ -193,9 +213,7 @@ class YunkanApiClient:
         message = _error_message(body)
         if status == 401 and auth and retry:
             # 30-day JWT expired or invalidated: log in again and let the caller retry.
-            async with self._auth_lock:
-                self._token = None
-                await self.async_login()
+            await self._reauth()
             return
         if status == 401:
             raise YunkanAuthError(message or "unauthorized")
@@ -246,7 +264,9 @@ class YunkanApiClient:
         data = await self._request("GET", API_CAMERAS)
         return data if isinstance(data, list) else []
 
-    async def async_snapshot(self, camera_id: str, *, force: bool = False) -> bytes | None:
+    async def async_snapshot(
+        self, camera_id: str, *, force: bool = False, _retry: bool = True
+    ) -> bytes | None:
         """Return the latest camera snapshot JPEG, or ``None`` if unavailable."""
         await self._ensure_token()
         path = API_CAMERA_SNAPSHOT.format(camera_id=quote(camera_id, safe=""))
@@ -260,12 +280,9 @@ class YunkanApiClient:
             ) as resp:
                 if resp.status == 200:
                     return await resp.read()
-                if resp.status in (204, 404):
-                    return None
-                if resp.status == 401:
-                    self._token = None
-                    await self.async_login()
-                    return await self.async_snapshot(camera_id, force=force)
+                if resp.status == 401 and _retry:
+                    await self._reauth()
+                    return await self.async_snapshot(camera_id, force=force, _retry=False)
                 return None
         except (aiohttp.ClientError, TimeoutError) as err:
             _LOGGER.debug("snapshot fetch for %s failed: %s", camera_id, err)
@@ -275,6 +292,50 @@ class YunkanApiClient:
         """Sign a short-lived live playback grant for a camera."""
         path = API_LIVE_GRANT.format(camera_id=quote(camera_id, safe=""))
         return await self._request("POST", path)
+
+    async def async_birdseye_grant(self) -> dict[str, Any]:
+        """Sign a live grant for the birdseye overview stream (admin + enabled)."""
+        return await self._request("POST", API_BIRDSEYE_GRANT)
+
+    async def async_update_camera(self, camera_id: str, **fields: Any) -> dict[str, Any]:
+        """Update camera fields (PUT, admin) — e.g. record_mode / detection_enabled."""
+        path = API_CAMERA_UPDATE.format(camera_id=quote(camera_id, safe=""))
+        return await self._request("PUT", path, json=fields)
+
+    async def async_get_settings(self) -> dict[str, Any]:
+        """Return the server's effective settings values keyed by dot-path (admin).
+
+        Wraps GET /api/settings/all, returning just the ``values`` map (dot-path
+        -> current effective value). Requires an admin account; non-admins get a
+        403, which the caller treats as "global settings unknown".
+        """
+        data = await self._request("GET", API_SETTINGS_ALL)
+        values = data.get("values") if isinstance(data, dict) else None
+        return values if isinstance(values, dict) else {}
+
+    async def async_update_settings(self, updates: dict[str, Any]) -> dict[str, Any]:
+        """Bulk-update server settings by dot-path (admin).
+
+        ``updates`` maps whitelisted dot-paths to values, e.g.
+        ``{"detection.face.enabled": True}``. The backend validates against its
+        own allow-list and silently drops unknown keys.
+        """
+        return await self._request("PUT", API_SETTINGS_BULK, json=updates)
+
+    async def async_create_export(
+        self, camera_id: str, start_ms: int, end_ms: int
+    ) -> dict[str, Any]:
+        """Queue a recording export job for a time range (epoch milliseconds)."""
+        return await self._request(
+            "POST",
+            API_EXPORT,
+            json={"camera_id": camera_id, "start_ms": start_ms, "end_ms": end_ms},
+        )
+
+    def live_tracks_url(self, camera_id: str, ticket: str) -> str:
+        """Build the per-camera live detection tracks SSE URL (ticket-authed)."""
+        path = API_LIVE_TRACKS.format(camera_id=quote(camera_id, safe=""))
+        return self.abs_url(f"{path}?{urlencode({'ticket': ticket})}")
 
     async def async_whep_offer(self, whep_url: str, offer_sdp: str) -> str:
         """POST an SDP offer to a WHEP endpoint and return the SDP answer."""
@@ -334,7 +395,12 @@ class YunkanApiClient:
         return await self._request("GET", API_EVENT_DETAIL.format(event_id=event_id))
 
     async def async_event_snapshot(
-        self, snapshot_url: str, *, width: int | None = None, annotate_event_id: int | None = None
+        self,
+        snapshot_url: str,
+        *,
+        width: int | None = None,
+        annotate_event_id: int | None = None,
+        _retry: bool = True,
     ) -> bytes | None:
         """Fetch an event snapshot JPEG via the Bearer-authenticated snapshot endpoint.
 
@@ -358,11 +424,13 @@ class YunkanApiClient:
             ) as resp:
                 if resp.status == 200:
                     return await resp.read()
-                if resp.status == 401:
-                    self._token = None
-                    await self.async_login()
+                if resp.status == 401 and _retry:
+                    await self._reauth()
                     return await self.async_event_snapshot(
-                        snapshot_url, width=width, annotate_event_id=annotate_event_id
+                        snapshot_url,
+                        width=width,
+                        annotate_event_id=annotate_event_id,
+                        _retry=False,
                     )
                 return None
         except (aiohttp.ClientError, TimeoutError) as err:
@@ -432,6 +500,27 @@ class YunkanApiClient:
             preset_token=quote(preset_token, safe=""),
         )
         await self._request("POST", path, json={"speed": speed})
+
+    async def async_ptz_presets(self, camera_id: str) -> list[dict[str, Any]]:
+        """List a camera's stored PTZ presets."""
+        path = API_PTZ_PRESETS.format(camera_id=quote(camera_id, safe=""))
+        data = await self._request("GET", path)
+        return data if isinstance(data, list) else []
+
+    async def async_create_timelapse(
+        self, camera_id: str, start_ms: int, end_ms: int, speed: int
+    ) -> dict[str, Any]:
+        """Queue a timelapse export job (speed = fixed multiplier, >= 2)."""
+        return await self._request(
+            "POST",
+            API_TIMELAPSE,
+            json={
+                "camera_id": camera_id,
+                "start_ms": start_ms,
+                "end_ms": end_ms,
+                "speed": speed,
+            },
+        )
 
     # --------------------------------------------------------------- talkback
 

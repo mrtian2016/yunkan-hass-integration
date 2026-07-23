@@ -116,3 +116,49 @@ async def test_sse_stream_url() -> None:
     async with aiohttp.ClientSession() as session:
         client = await _client(session)
         assert client.sse_stream_url("TICK") == f"{BASE}/api/events/stream?ticket=TICK"
+
+
+@pytest.mark.asyncio
+async def test_get_settings_returns_values_map() -> None:
+    """get_settings unwraps the ``values`` dot-path map from /settings/all."""
+    values = {
+        "detection.object.enabled": True,
+        "detection.face.enabled": False,
+    }
+    with aioresponses() as mock:
+        mock.post(f"{BASE}/api/auth/login", payload=_ok({"access_token": "TOK"}))
+        mock.get(
+            f"{BASE}/api/settings/all",
+            payload=_ok({"values": values, "overrides": [], "defaults": {}}),
+        )
+        async with aiohttp.ClientSession() as session:
+            client = await _client(session)
+            assert await client.async_get_settings() == values
+
+
+@pytest.mark.asyncio
+async def test_get_settings_without_values_is_empty() -> None:
+    """A malformed settings response yields an empty map, not an error."""
+    with aioresponses() as mock:
+        mock.post(f"{BASE}/api/auth/login", payload=_ok({"access_token": "TOK"}))
+        mock.get(f"{BASE}/api/settings/all", payload=_ok({"overrides": []}))
+        async with aiohttp.ClientSession() as session:
+            client = await _client(session)
+            assert await client.async_get_settings() == {}
+
+
+@pytest.mark.asyncio
+async def test_update_settings_puts_bulk() -> None:
+    """update_settings PUTs the dot-path map to the bulk endpoint."""
+    with aioresponses() as mock:
+        mock.post(f"{BASE}/api/auth/login", payload=_ok({"access_token": "TOK"}))
+        mock.put(
+            f"{BASE}/api/settings/bulk",
+            payload=_ok({"applied": ["detection.face.enabled"], "rejected": []}),
+        )
+        async with aiohttp.ClientSession() as session:
+            client = await _client(session)
+            result = await client.async_update_settings(
+                {"detection.face.enabled": True}
+            )
+            assert result["applied"] == ["detection.face.enabled"]

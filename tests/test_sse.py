@@ -11,8 +11,8 @@ def _make_client(sink: list[dict]) -> YunkanSSEClient:
     async def _on_event(event: dict) -> None:
         sink.append(event)
 
-    # The REST client is unused by _dispatch, so None is fine here.
-    return YunkanSSEClient(None, _on_event)  # type: ignore[arg-type]
+    # hass and the REST client are unused by _dispatch, so None is fine here.
+    return YunkanSSEClient(None, None, _on_event)  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio

@@ -1,10 +1,13 @@
 """Camera platform for the Yunkan integration.
 
-Each Yunkan camera becomes a native HA camera entity:
+Each Yunkan camera becomes a native HA camera entity, plus an optional birdseye
+overview camera when the server has it enabled:
 * snapshots come from the backend's JPEG snapshot endpoint;
 * live view uses HA's native WebRTC path (2024.11+) by relaying the browser's
   SDP offer to the server's WHEP endpoint and returning the answer;
-* HLS is offered as a fallback ``stream_source`` when WebRTC can't be reached.
+* ``stream_source`` returns an HLS URL used by the stream component for
+  recording, casting and still previews (the frontend live view itself is
+  WebRTC, so it does not silently fall back to HLS if WebRTC can't connect).
 
 All playback URLs are signed with a short-lived live-grant token minted per
 session; nothing but the nginx entry (base URL) is ever exposed.
@@ -32,12 +35,15 @@ except ImportError:  # older cores re-exported it from the camera component
     from homeassistant.components.camera.webrtc import RTCIceServer
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import YunkanConfigEntry
-from .api import YunkanApiError
+from .api import YunkanApiError, YunkanConnectionError
+from .const import BIRDSEYE_CAMERA_ID
 from .coordinator import YunkanCoordinator
-from .entity import YunkanCameraEntity
+from .entity import YunkanCameraEntity, server_device_info
 from .urls import build_hls_url, build_whep_url, pick_stream
 
 _LOGGER = logging.getLogger(__name__)
@@ -52,49 +58,61 @@ async def async_setup_entry(
     entry: YunkanConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Yunkan cameras from a config entry."""
+    """Set up Yunkan cameras (and birdseye, if enabled) from a config entry."""
     coordinator = entry.runtime_data
-    async_add_entities(
+    entities: list[Camera] = [
         YunkanCamera(coordinator, camera_id) for camera_id in coordinator.data.cameras
-    )
+    ]
+    # Add the birdseye overview camera only when the server has it enabled.
+    try:
+        await coordinator.client.async_birdseye_grant()
+    except YunkanConnectionError as err:
+        # A transient blip must not permanently drop birdseye until reload —
+        # retry setup instead of misreading it as "not enabled".
+        raise ConfigEntryNotReady(f"Yunkan server unreachable: {err}") from err
+    except YunkanApiError:
+        _LOGGER.debug("birdseye not available; skipping overview camera")
+    else:
+        entities.append(YunkanBirdseyeCamera(coordinator))
+    async_add_entities(entities)
 
 
-class YunkanCamera(YunkanCameraEntity, Camera):
-    """A Yunkan camera exposed to Home Assistant."""
+class _YunkanStreamCamera(Camera):
+    """Base camera providing grant-based native WebRTC (WHEP) + HLS streaming.
+
+    Subclasses supply ``_stream_label`` and ``_fetch_grant()``. ``self.coordinator``
+    is provided by the concrete entity base (CoordinatorEntity).
+    """
 
     _attr_supported_features = CameraEntityFeature.STREAM
-    _attr_name = None  # the device name is the camera name
 
-    def __init__(self, coordinator: YunkanCoordinator, camera_id: str) -> None:
-        """Initialise the camera entity."""
-        YunkanCameraEntity.__init__(self, coordinator, camera_id)
+    coordinator: YunkanCoordinator
+    _stream_label: str
+
+    def _init_stream(self) -> None:
+        """Initialise the grant cache (call from the subclass __init__)."""
         Camera.__init__(self)
-        self._attr_unique_id = f"{self._entry_id}_{camera_id}_camera"
         self._grant: dict[str, Any] | None = None
         self._grant_ts: float = 0.0
 
-    @property
-    def is_on(self) -> bool:
-        """Return whether the camera is enabled on the server."""
-        return bool(self._camera.get("enabled", True))
+    async def async_added_to_hass(self) -> None:
+        """Warm the grant so the first WebRTC config carries the server ICE servers."""
+        await super().async_added_to_hass()
+        try:
+            await self._async_grant()
+        except YunkanApiError:
+            pass  # streaming will retry on demand
 
-    @property
-    def available(self) -> bool:
-        """Camera is available while the poll succeeds and it still exists."""
-        return super().available
-
-    async def async_camera_image(
-        self, width: int | None = None, height: int | None = None
-    ) -> bytes | None:
-        """Return the latest snapshot JPEG."""
-        return await self.coordinator.client.async_snapshot(self._camera_id)
+    async def _fetch_grant(self) -> dict[str, Any]:
+        """Fetch a fresh live grant (per-camera or birdseye)."""
+        raise NotImplementedError
 
     async def _async_grant(self) -> dict[str, Any]:
-        """Return a cached (or fresh) live-grant for this camera."""
+        """Return a cached (or fresh) live grant."""
         now = time.monotonic()
         if self._grant is not None and (now - self._grant_ts) < _GRANT_REUSE_SEC:
             return self._grant
-        grant = await self.coordinator.client.async_live_grant(self._camera_id)
+        grant = await self._fetch_grant()
         self._grant = grant
         self._grant_ts = now
         return grant
@@ -104,7 +122,7 @@ class YunkanCamera(YunkanCameraEntity, Camera):
         try:
             grant = await self._async_grant()
         except YunkanApiError as err:
-            _LOGGER.debug("live-grant for %s failed: %s", self._camera_id, err)
+            _LOGGER.debug("live-grant for %s failed: %s", self._stream_label, err)
             return None
         app, stream, token = pick_stream(grant, "aac_variant")
         if not stream or not token:
@@ -112,12 +130,7 @@ class YunkanCamera(YunkanCameraEntity, Camera):
         return build_hls_url(self.coordinator.client.base_url, app, stream, token)
 
     def _async_get_webrtc_client_configuration(self) -> WebRTCClientConfiguration:
-        """Return the WebRTC client config (sync hook), adding cached ICE servers.
-
-        Home Assistant calls this synchronously, so any ICE servers must come
-        from a live-grant cached by a prior async call rather than a fresh fetch.
-        On a LAN the server returns no ICE servers and direct candidates suffice.
-        """
+        """Return the WebRTC client config (sync hook), adding cached ICE servers."""
         config = super()._async_get_webrtc_client_configuration()
         grant = self._grant
         if grant:
@@ -146,7 +159,7 @@ class YunkanCamera(YunkanCameraEntity, Camera):
             whep_url = build_whep_url(self.coordinator.client.base_url, app, stream, token)
             answer = await self.coordinator.client.async_whep_offer(whep_url, offer_sdp)
         except YunkanApiError as err:
-            _LOGGER.warning("WebRTC offer for %s failed: %s", self._camera_id, err)
+            _LOGGER.warning("WebRTC offer for %s failed: %s", self._stream_label, err)
             send_message(WebRTCError("webrtc_offer_failed", str(err)))
             return
         send_message(WebRTCAnswer(answer))
@@ -154,3 +167,63 @@ class YunkanCamera(YunkanCameraEntity, Camera):
     @callback
     def close_webrtc_session(self, session_id: str) -> None:
         """WHEP is stateless from our side; nothing to tear down locally."""
+
+
+class YunkanCamera(YunkanCameraEntity, _YunkanStreamCamera):
+    """A Yunkan camera exposed to Home Assistant."""
+
+    _attr_name = None  # the device name is the camera name
+
+    def __init__(self, coordinator: YunkanCoordinator, camera_id: str) -> None:
+        """Initialise the camera entity."""
+        YunkanCameraEntity.__init__(self, coordinator, camera_id)
+        self._init_stream()
+        self._attr_unique_id = f"{self._entry_id}_{camera_id}_camera"
+        self._stream_label = camera_id
+
+    @property
+    def is_on(self) -> bool:
+        """Return whether the camera is enabled on the server."""
+        return bool(self._camera.get("enabled", True))
+
+    async def _fetch_grant(self) -> dict[str, Any]:
+        """Sign a per-camera live grant."""
+        return await self.coordinator.client.async_live_grant(self._camera_id)
+
+    async def async_camera_image(
+        self, width: int | None = None, height: int | None = None
+    ) -> bytes | None:
+        """Return the latest snapshot JPEG."""
+        return await self.coordinator.client.async_snapshot(self._camera_id)
+
+
+class YunkanBirdseyeCamera(CoordinatorEntity[YunkanCoordinator], _YunkanStreamCamera):
+    """The birdseye overview stream (all detection cameras tiled)."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "birdseye"
+
+    def __init__(self, coordinator: YunkanCoordinator) -> None:
+        """Initialise the birdseye camera."""
+        CoordinatorEntity.__init__(self, coordinator)
+        self._init_stream()
+        self._entry_id = coordinator.entry.entry_id
+        self._attr_unique_id = f"{self._entry_id}_{BIRDSEYE_CAMERA_ID}"
+        self._stream_label = BIRDSEYE_CAMERA_ID
+
+    @property
+    def device_info(self):
+        """Attach the birdseye camera to the server (hub) device."""
+        return server_device_info(
+            self._entry_id, self.coordinator.client.base_url, self.coordinator.data.version
+        )
+
+    async def _fetch_grant(self) -> dict[str, Any]:
+        """Sign a birdseye live grant."""
+        return await self.coordinator.client.async_birdseye_grant()
+
+    async def async_camera_image(
+        self, width: int | None = None, height: int | None = None
+    ) -> bytes | None:
+        """Birdseye has no still endpoint; HA derives a preview from the stream."""
+        return None

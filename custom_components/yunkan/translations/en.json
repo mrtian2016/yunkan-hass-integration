@@ -37,26 +37,148 @@
   },
   "entity": {
     "binary_sensor": {
-      "online": { "name": "Online" },
-      "person": { "name": "Person" },
-      "vehicle": { "name": "Vehicle" },
-      "animal": { "name": "Animal" },
-      "package": { "name": "Package" },
-      "face": { "name": "Face" },
-      "fall": { "name": "Fall" },
-      "cry": { "name": "Baby cry" }
+      "online": {
+        "name": "Online"
+      },
+      "person": {
+        "name": "Person"
+      },
+      "vehicle": {
+        "name": "Vehicle"
+      },
+      "animal": {
+        "name": "Animal"
+      },
+      "package": {
+        "name": "Package"
+      },
+      "face": {
+        "name": "Face"
+      },
+      "fall": {
+        "name": "Fall"
+      },
+      "cry": {
+        "name": "Baby cry"
+      },
+      "motion": {
+        "name": "Motion"
+      }
     },
     "sensor": {
-      "last_event": { "name": "Last event" }
+      "last_event": {
+        "name": "Last event"
+      },
+      "person_count": {
+        "name": "Person count"
+      },
+      "vehicle_count": {
+        "name": "Vehicle count"
+      },
+      "animal_count": {
+        "name": "Animal count"
+      },
+      "package_count": {
+        "name": "Package count"
+      },
+      "recognized_face": {
+        "name": "Recognized face"
+      },
+      "recognized_plate": {
+        "name": "Recognized plate"
+      }
     },
     "switch": {
-      "detection": { "name": "AI detection" }
+      "detection": {
+        "name": "AI detection"
+      },
+      "recording": {
+        "name": "Recording"
+      },
+      "detect_object": {
+        "name": "Object detection"
+      },
+      "detect_audio": {
+        "name": "Audio detection"
+      },
+      "detect_face": {
+        "name": "Face detection"
+      },
+      "detect_plate": {
+        "name": "Plate detection"
+      },
+      "detect_pose": {
+        "name": "Pose detection"
+      },
+      "detect_gesture": {
+        "name": "Gesture detection"
+      },
+      "detect_package": {
+        "name": "Package detection"
+      },
+      "ptz_autotrack": {
+        "name": "Auto-tracking"
+      },
+      "global_detect_object": {
+        "name": "Object detection (server-wide)"
+      },
+      "global_detect_audio": {
+        "name": "Audio detection (server-wide)"
+      },
+      "global_detect_face": {
+        "name": "Face detection (server-wide)"
+      },
+      "global_detect_plate": {
+        "name": "Plate detection (server-wide)"
+      },
+      "global_detect_pose": {
+        "name": "Pose detection (server-wide)"
+      },
+      "global_detect_gesture": {
+        "name": "Gesture detection (server-wide)"
+      },
+      "global_detect_package": {
+        "name": "Package detection (server-wide)"
+      },
+      "global_detect_motion": {
+        "name": "Motion detection (server-wide)"
+      }
     },
     "image": {
-      "latest_event": { "name": "Latest event" }
+      "latest_event": {
+        "name": "Latest event"
+      },
+      "latest_person": {
+        "name": "Latest person"
+      },
+      "latest_vehicle": {
+        "name": "Latest vehicle"
+      },
+      "latest_animal": {
+        "name": "Latest animal"
+      },
+      "latest_package": {
+        "name": "Latest package"
+      },
+      "latest_face": {
+        "name": "Latest face"
+      },
+      "latest_fall": {
+        "name": "Latest fall"
+      },
+      "latest_cry": {
+        "name": "Latest cry"
+      }
+    },
+    "camera": {
+      "birdseye": {
+        "name": "Birdseye"
+      }
     },
     "update": {
-      "server": { "name": "Server" }
+      "server": {
+        "name": "Server"
+      }
     }
   },
   "services": {
@@ -75,6 +197,10 @@
         "duration": {
           "name": "Duration",
           "description": "How long to move before stopping, in seconds. Use 0 to keep moving until another command."
+        },
+        "preset": {
+          "name": "Preset",
+          "description": "Go to a named preset position."
         }
       }
     },
@@ -109,6 +235,35 @@
           "description": "Full path to write the JPEG to. The folder must be in allowlist_external_dirs."
         }
       }
+    },
+    "export": {
+      "name": "Export recording",
+      "description": "Exports a recording for a time range to a downloadable clip.",
+      "fields": {
+        "start": {
+          "name": "Start",
+          "description": "Start of the range to export."
+        },
+        "end": {
+          "name": "End",
+          "description": "End of the range to export."
+        },
+        "playback_factor": {
+          "name": "Playback factor",
+          "description": "realtime, or a 25x timelapse."
+        }
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "person_detected": "Person detected",
+      "vehicle_detected": "Vehicle detected",
+      "animal_detected": "Animal detected",
+      "package_detected": "Package detected",
+      "face_detected": "Face detected",
+      "fall_detected": "Fall detected",
+      "cry_detected": "Baby cry detected"
     }
   },
   "issues": {

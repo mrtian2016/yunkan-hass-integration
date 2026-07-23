@@ -9,6 +9,7 @@ so external players can play a clip for a limited time.
 from __future__ import annotations
 
 import logging
+from urllib.parse import urlencode
 
 from aiohttp import web
 
@@ -48,9 +49,9 @@ def async_register_views(hass: HomeAssistant) -> None:
 
 
 def _get_coordinator(hass: HomeAssistant, entry_id: str):
-    """Return the coordinator for an entry id, or None."""
+    """Return the coordinator for a loaded Yunkan entry id, or None."""
     entry = hass.config_entries.async_get_entry(entry_id)
-    if entry is None or entry.state.name != "LOADED":
+    if entry is None or entry.domain != DOMAIN or entry.state.name != "LOADED":
         return None
     return getattr(entry, "runtime_data", None)
 
@@ -75,7 +76,10 @@ class YunkanCameraSnapshotView(HomeAssistantView):
         """Return the current camera snapshot."""
         hass: HomeAssistant = request.app["hass"]
         coordinator = _get_coordinator(hass, entry_id)
-        if coordinator is None:
+        # Scope to cameras this integration actually exposes (enabled, non
+        # archived). Without this, any authenticated HA user could borrow the
+        # integration's backend token to snapshot a hidden camera by id.
+        if coordinator is None or camera_id not in coordinator.data.cameras:
             return web.Response(status=404)
         data = await coordinator.client.async_snapshot(camera_id)
         return await _proxy_bytes(data)
@@ -95,10 +99,15 @@ class YunkanEventSnapshotView(HomeAssistantView):
         if coordinator is None:
             return web.Response(status=404)
         snapshot_path = request.query.get("path")
-        if not snapshot_path:
+        # Defence in depth: the backend already blocks traversal, but only ever
+        # proxy well-formed event snapshot paths.
+        if (
+            not snapshot_path
+            or not snapshot_path.startswith("events/")
+            or ".." in snapshot_path
+        ):
             return web.Response(status=400)
-        # Only allow the backend's own event-snapshot endpoint to be proxied.
-        rel = f"/api/events/snapshot?path={snapshot_path}"
+        rel = "/api/events/snapshot?" + urlencode({"path": snapshot_path})
         event_id = request.query.get("event_id")
         width = request.query.get("w")
         data = await coordinator.client.async_event_snapshot(
@@ -130,6 +139,13 @@ class YunkanRecordingView(HomeAssistantView):
             info = await client.async_recording_url(int(recording_id))
         except Exception as err:  # noqa: BLE001
             _LOGGER.debug("recording %s resolve failed: %s", recording_id, err)
+            return web.Response(status=404)
+
+        # Scope to a camera this integration exposes: a recording belonging to a
+        # hidden camera must not be reachable by guessing its (sequential) id.
+        rec = info.get("recording") if isinstance(info, dict) else None
+        rec_camera = rec.get("camera_id") if isinstance(rec, dict) else None
+        if rec_camera is not None and rec_camera not in coordinator.data.cameras:
             return web.Response(status=404)
 
         req_headers: dict[str, str] = {}

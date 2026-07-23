@@ -30,7 +30,9 @@ from .views import URL_EVENT_SNAPSHOT, URL_RECORDING
 
 _LOGGER = logging.getLogger(__name__)
 
+# Recording playback may run for a while (cast); snapshots are fetched quickly.
 _SIGN_TTL = timedelta(hours=12)
+_SNAPSHOT_SIGN_TTL = timedelta(hours=2)
 _EVENT_LIMIT = 60
 
 
@@ -78,7 +80,9 @@ class YunkanMediaSource(MediaSource):
                     {"path": snapshot_path, "event_id": event_id}
                 )
             )
-            return PlayMedia(async_sign_path(self.hass, url, _SIGN_TTL), "image/jpeg")
+            return PlayMedia(
+                async_sign_path(self.hass, url, _SNAPSHOT_SIGN_TTL), "image/jpeg"
+            )
 
         raise Unresolvable("Unsupported Yunkan media item")
 
@@ -106,6 +110,8 @@ class YunkanMediaSource(MediaSource):
             return await self._browse_recordings(entry_id, coordinator, parts[2], parts[3])
         if kind == "evt" and len(parts) == 3:
             return await self._browse_events(entry_id, coordinator, parts[2])
+        if kind == "snap" and len(parts) == 3:
+            return await self._browse_snapshots(entry_id, coordinator, parts[2])
         raise BrowseError("Unknown Yunkan media path")
 
     # ------------------------------------------------------------- browse impl
@@ -183,6 +189,16 @@ class YunkanMediaSource(MediaSource):
                 can_expand=True,
                 children_media_class=MediaClass.VIDEO,
             ),
+            BrowseMediaSource(
+                domain=DOMAIN,
+                identifier=f"{entry_id}/snap/{quote(camera_id, safe='')}",
+                media_class=MediaClass.DIRECTORY,
+                media_content_type=MediaType.IMAGE,
+                title="Snapshots",
+                can_play=False,
+                can_expand=True,
+                children_media_class=MediaClass.IMAGE,
+            ),
         ]
         return _directory(f"{entry_id}/camera/{quote(camera_id, safe='')}", name, children)
 
@@ -254,6 +270,39 @@ class YunkanMediaSource(MediaSource):
             children.append(self._event_child(entry_id, event))
         return _directory(f"{entry_id}/evt/{quote(camera_id, safe='')}", "Events", children)
 
+    async def _browse_snapshots(
+        self, entry_id: str, coordinator, camera_id: str
+    ) -> BrowseMediaSource:
+        """List recent event snapshots for a camera as a still gallery."""
+        try:
+            payload = await coordinator.client.async_list_events(
+                camera=camera_id, limit=_EVENT_LIMIT
+            )
+        except Exception as err:  # noqa: BLE001
+            raise BrowseError(f"Could not list snapshots: {err}") from err
+        children = []
+        for event in payload.get("events", []):
+            if not event.get("snapshot_url"):
+                continue
+            event_type = event.get("event_type", "")
+            category = EVENT_CATEGORY_MAP.get(event_type, event_type)
+            when = str(event.get("event_time", ""))[:19]
+            children.append(
+                BrowseMediaSource(
+                    domain=DOMAIN,
+                    identifier=f"{entry_id}/img/{event.get('id')}",
+                    media_class=MediaClass.IMAGE,
+                    media_content_type="image/jpeg",
+                    title=f"{when} · {category}".strip(" ·"),
+                    can_play=True,
+                    can_expand=False,
+                    thumbnail=self._event_thumbnail(entry_id, event),
+                )
+            )
+        return _directory(
+            f"{entry_id}/snap/{quote(camera_id, safe='')}", "Snapshots", children
+        )
+
     def _event_child(self, entry_id: str, event: dict) -> BrowseMediaSource:
         """Build a browse node for one event."""
         event_type = event.get("event_type", "")
@@ -294,14 +343,14 @@ class YunkanMediaSource(MediaSource):
                 {"path": snapshot_path, "w": 320}
             )
         )
-        return async_sign_path(self.hass, url, _SIGN_TTL)
+        return async_sign_path(self.hass, url, _SNAPSHOT_SIGN_TTL)
 
     # ----------------------------------------------------------------- helpers
 
     def _coordinator(self, entry_id: str):
-        """Return the coordinator for an entry id, or None."""
+        """Return the coordinator for a Yunkan entry id, or None."""
         entry = self.hass.config_entries.async_get_entry(entry_id)
-        if entry is None:
+        if entry is None or entry.domain != DOMAIN:
             return None
         return getattr(entry, "runtime_data", None)
 

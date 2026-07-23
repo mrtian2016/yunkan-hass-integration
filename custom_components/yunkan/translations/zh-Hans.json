@@ -37,26 +37,148 @@
   },
   "entity": {
     "binary_sensor": {
-      "online": { "name": "在线" },
-      "person": { "name": "人" },
-      "vehicle": { "name": "车辆" },
-      "animal": { "name": "动物" },
-      "package": { "name": "包裹" },
-      "face": { "name": "人脸" },
-      "fall": { "name": "跌倒" },
-      "cry": { "name": "婴儿哭声" }
+      "online": {
+        "name": "在线"
+      },
+      "person": {
+        "name": "人"
+      },
+      "vehicle": {
+        "name": "车辆"
+      },
+      "animal": {
+        "name": "动物"
+      },
+      "package": {
+        "name": "包裹"
+      },
+      "face": {
+        "name": "人脸"
+      },
+      "fall": {
+        "name": "跌倒"
+      },
+      "cry": {
+        "name": "婴儿哭声"
+      },
+      "motion": {
+        "name": "移动"
+      }
     },
     "sensor": {
-      "last_event": { "name": "最近事件" }
+      "last_event": {
+        "name": "最近事件"
+      },
+      "person_count": {
+        "name": "人数"
+      },
+      "vehicle_count": {
+        "name": "车辆数"
+      },
+      "animal_count": {
+        "name": "动物数"
+      },
+      "package_count": {
+        "name": "包裹数"
+      },
+      "recognized_face": {
+        "name": "识别人脸"
+      },
+      "recognized_plate": {
+        "name": "识别车牌"
+      }
     },
     "switch": {
-      "detection": { "name": "AI 识别" }
+      "detection": {
+        "name": "AI 识别"
+      },
+      "recording": {
+        "name": "录像"
+      },
+      "detect_object": {
+        "name": "物体检测"
+      },
+      "detect_audio": {
+        "name": "声音检测"
+      },
+      "detect_face": {
+        "name": "人脸检测"
+      },
+      "detect_plate": {
+        "name": "车牌检测"
+      },
+      "detect_pose": {
+        "name": "姿态检测"
+      },
+      "detect_gesture": {
+        "name": "手势检测"
+      },
+      "detect_package": {
+        "name": "包裹检测"
+      },
+      "ptz_autotrack": {
+        "name": "自动追踪"
+      },
+      "global_detect_object": {
+        "name": "全局物体检测"
+      },
+      "global_detect_audio": {
+        "name": "全局声音检测"
+      },
+      "global_detect_face": {
+        "name": "全局人脸检测"
+      },
+      "global_detect_plate": {
+        "name": "全局车牌检测"
+      },
+      "global_detect_pose": {
+        "name": "全局姿态检测"
+      },
+      "global_detect_gesture": {
+        "name": "全局手势检测"
+      },
+      "global_detect_package": {
+        "name": "全局包裹检测"
+      },
+      "global_detect_motion": {
+        "name": "全局移动侦测"
+      }
     },
     "image": {
-      "latest_event": { "name": "最新事件" }
+      "latest_event": {
+        "name": "最新事件"
+      },
+      "latest_person": {
+        "name": "最新人"
+      },
+      "latest_vehicle": {
+        "name": "最新车辆"
+      },
+      "latest_animal": {
+        "name": "最新动物"
+      },
+      "latest_package": {
+        "name": "最新包裹"
+      },
+      "latest_face": {
+        "name": "最新人脸"
+      },
+      "latest_fall": {
+        "name": "最新跌倒"
+      },
+      "latest_cry": {
+        "name": "最新哭声"
+      }
+    },
+    "camera": {
+      "birdseye": {
+        "name": "鸟瞰全景"
+      }
     },
     "update": {
-      "server": { "name": "服务器" }
+      "server": {
+        "name": "服务器"
+      }
     }
   },
   "services": {
@@ -75,6 +197,10 @@
         "duration": {
           "name": "时长",
           "description": "移动多少秒后停止。填 0 则持续移动直到下一条指令。"
+        },
+        "preset": {
+          "name": "预置位",
+          "description": "转到指定的预置位。"
         }
       }
     },
@@ -109,12 +235,41 @@
           "description": "保存 JPEG 的完整路径。所在目录需在 allowlist_external_dirs 中。"
         }
       }
+    },
+    "export": {
+      "name": "导出录像",
+      "description": "将某时间段的录像导出为可下载片段。",
+      "fields": {
+        "start": {
+          "name": "开始",
+          "description": "导出范围的起始时间。"
+        },
+        "end": {
+          "name": "结束",
+          "description": "导出范围的结束时间。"
+        },
+        "playback_factor": {
+          "name": "播放倍速",
+          "description": "实时，或 30 倍延时。"
+        }
+      }
     }
   },
   "issues": {
     "pro_required": {
       "title": "需要云瞰 Pro",
       "description": "此操作需要云瞰 Pro 授权，但当前服务器为免费档（状态：{status}）。升级前 AI 识别与语音喊话不可用。"
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "person_detected": "检测到人",
+      "vehicle_detected": "检测到车辆",
+      "animal_detected": "检测到动物",
+      "package_detected": "检测到包裹",
+      "face_detected": "检测到人脸",
+      "fall_detected": "检测到跌倒",
+      "cry_detected": "检测到婴儿哭声"
     }
   }
 }

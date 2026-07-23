@@ -37,26 +37,148 @@
   },
   "entity": {
     "binary_sensor": {
-      "online": { "name": "オンライン" },
-      "person": { "name": "人物" },
-      "vehicle": { "name": "車両" },
-      "animal": { "name": "動物" },
-      "package": { "name": "荷物" },
-      "face": { "name": "顔" },
-      "fall": { "name": "転倒" },
-      "cry": { "name": "赤ちゃんの泣き声" }
+      "online": {
+        "name": "オンライン"
+      },
+      "person": {
+        "name": "人物"
+      },
+      "vehicle": {
+        "name": "車両"
+      },
+      "animal": {
+        "name": "動物"
+      },
+      "package": {
+        "name": "荷物"
+      },
+      "face": {
+        "name": "顔"
+      },
+      "fall": {
+        "name": "転倒"
+      },
+      "cry": {
+        "name": "赤ちゃんの泣き声"
+      },
+      "motion": {
+        "name": "動き"
+      }
     },
     "sensor": {
-      "last_event": { "name": "最新イベント" }
+      "last_event": {
+        "name": "最新イベント"
+      },
+      "person_count": {
+        "name": "人数"
+      },
+      "vehicle_count": {
+        "name": "車両数"
+      },
+      "animal_count": {
+        "name": "動物数"
+      },
+      "package_count": {
+        "name": "荷物数"
+      },
+      "recognized_face": {
+        "name": "認識した顔"
+      },
+      "recognized_plate": {
+        "name": "認識したナンバー"
+      }
     },
     "switch": {
-      "detection": { "name": "AI 検知" }
+      "detection": {
+        "name": "AI 検知"
+      },
+      "recording": {
+        "name": "録画"
+      },
+      "detect_object": {
+        "name": "物体検知"
+      },
+      "detect_audio": {
+        "name": "音声検知"
+      },
+      "detect_face": {
+        "name": "顔検知"
+      },
+      "detect_plate": {
+        "name": "ナンバー検知"
+      },
+      "detect_pose": {
+        "name": "姿勢検知"
+      },
+      "detect_gesture": {
+        "name": "ジェスチャー検知"
+      },
+      "detect_package": {
+        "name": "荷物検知"
+      },
+      "ptz_autotrack": {
+        "name": "自動追尾"
+      },
+      "global_detect_object": {
+        "name": "物体検知（サーバー全体）"
+      },
+      "global_detect_audio": {
+        "name": "音声検知（サーバー全体）"
+      },
+      "global_detect_face": {
+        "name": "顔検知（サーバー全体）"
+      },
+      "global_detect_plate": {
+        "name": "ナンバー検知（サーバー全体）"
+      },
+      "global_detect_pose": {
+        "name": "姿勢検知（サーバー全体）"
+      },
+      "global_detect_gesture": {
+        "name": "ジェスチャー検知（サーバー全体）"
+      },
+      "global_detect_package": {
+        "name": "荷物検知（サーバー全体）"
+      },
+      "global_detect_motion": {
+        "name": "動き検知（サーバー全体）"
+      }
     },
     "image": {
-      "latest_event": { "name": "最新イベント" }
+      "latest_event": {
+        "name": "最新イベント"
+      },
+      "latest_person": {
+        "name": "最新の人物"
+      },
+      "latest_vehicle": {
+        "name": "最新の車両"
+      },
+      "latest_animal": {
+        "name": "最新の動物"
+      },
+      "latest_package": {
+        "name": "最新の荷物"
+      },
+      "latest_face": {
+        "name": "最新の顔"
+      },
+      "latest_fall": {
+        "name": "最新の転倒"
+      },
+      "latest_cry": {
+        "name": "最新の泣き声"
+      }
     },
     "update": {
-      "server": { "name": "サーバー" }
+      "server": {
+        "name": "サーバー"
+      }
+    },
+    "camera": {
+      "birdseye": {
+        "name": "バードアイ"
+      }
     }
   },
   "services": {
@@ -75,6 +197,10 @@
         "duration": {
           "name": "継続時間",
           "description": "停止するまでの秒数。0 の場合は次の指示まで動き続けます。"
+        },
+        "preset": {
+          "name": "プリセット",
+          "description": "指定したプリセット位置に移動します。"
         }
       }
     },
@@ -109,12 +235,41 @@
           "description": "JPEG を書き込むフルパス。フォルダーは allowlist_external_dirs に含まれている必要があります。"
         }
       }
+    },
+    "export": {
+      "name": "録画をエクスポート",
+      "description": "指定した時間範囲の録画をダウンロード可能なクリップとして書き出します。",
+      "fields": {
+        "start": {
+          "name": "開始",
+          "description": "エクスポート範囲の開始時刻。"
+        },
+        "end": {
+          "name": "終了",
+          "description": "エクスポート範囲の終了時刻。"
+        },
+        "playback_factor": {
+          "name": "再生倍率",
+          "description": "リアルタイム、または 30 倍タイムラプス。"
+        }
+      }
     }
   },
   "issues": {
     "pro_required": {
       "title": "Yunkan Pro が必要です",
       "description": "この操作には Yunkan Pro ライセンスが必要ですが、サーバーは無料プランです（ステータス: {status}）。アップグレードするまで AI 検知と音声アナウンスは利用できません。"
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "person_detected": "人を検出",
+      "vehicle_detected": "車両を検出",
+      "animal_detected": "動物を検出",
+      "package_detected": "荷物を検出",
+      "face_detected": "顔を検出",
+      "fall_detected": "転倒を検出",
+      "cry_detected": "赤ちゃんの泣き声を検出"
     }
   }
 }

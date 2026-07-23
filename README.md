@@ -17,17 +17,33 @@ server — the integration stores nothing but the connection details.
 - **Cameras** with native WebRTC (low-latency, HLS fallback) and JPEG snapshots.
   This unlocks the rest of the HA camera ecosystem: picture-glance cards, area
   dashboards, HomeKit export and `camera.snapshot`.
-- **Detection binary sensors** per camera — person, vehicle, animal, package,
-  face, fall and baby-cry — updated in real time from the event stream, plus an
-  **Online** connectivity sensor.
-- **Latest-event image** per camera (with detection boxes drawn) for rich
-  notifications.
-- **Last-event** timestamp sensor with the event category and summary as
-  attributes.
-- **AI detection switch** per camera (Pro).
-- **Media browser** to page through recordings by day and recent events (with
-  thumbnails), all proxied through Home Assistant's own authentication.
-- **Services**: `yunkan.ptz`, `yunkan.tts_broadcast` (Pro) and `yunkan.snapshot`.
+- **Detection occupancy sensors** per camera — person, vehicle, animal, package,
+  face, fall and baby-cry. They turn on the instant an event fires (carrying the
+  recognised name / licence plate as attributes) and stay on while the object is
+  present (live tracking), plus a generic **Motion** and an **Online** sensor.
+- **Object-count** sensors (live person / vehicle / animal / package counts) and
+  **Recognised face** / **Recognised plate** sensors per camera.
+- **Latest-event image** per camera plus a **latest snapshot per category**
+  (with detection boxes drawn) for rich notifications.
+- **Last-event** timestamp sensor with the event category, name, plate and
+  summary as attributes.
+- **Switches** per camera: AI detection, recording, per-feature detection
+  toggles (object / audio / face / plate / pose / gesture / package) and PTZ
+  auto-tracking.
+- **Server-wide detection switches** on the Yunkan server device — one master
+  toggle per detection feature (object / audio / face / plate / pose / gesture /
+  package) plus **motion**, the same control as the Web Admin detection page. A
+  feature turned off here is off for every camera; the per-camera switches sit
+  under it. Motion is server-wide only (per-camera motion is tuned by
+  sensitivity / region, not an on/off switch).
+- **Birdseye** overview camera (when enabled on the server).
+- **Media browser** to page through recordings by day, recent events and a
+  snapshot gallery (with thumbnails), all proxied through Home Assistant's own
+  authentication.
+- **Device triggers** — "person detected", "vehicle detected", etc. — for
+  building automations from the UI, plus a ready-made notification blueprint.
+- **Services**: `yunkan.ptz` (direction or preset), `yunkan.tts_broadcast`
+  (Pro), `yunkan.snapshot` and `yunkan.export` (clip, realtime or timelapse).
 - **Server update** entity that reflects the server's available version.
 
 ## Requirements
@@ -66,8 +82,9 @@ able to reach the Yunkan media plane (UDP/TCP port `23515`) on the server host:
   server's public address so it advertises a reachable candidate. See the
   Yunkan Home Assistant documentation for the reverse-proxy checklist.
 
-If WebRTC can't be reached (for example behind a tunnel that only carries TCP),
-the camera still works over HLS.
+Live view in the dashboard is WebRTC. Snapshots, recording, casting and still
+previews use HLS and keep working regardless; if the WebRTC media plane can't be
+reached the live card shows an error, so make sure port `23515` is reachable.
 
 ## Free tier vs Pro
 
@@ -90,6 +107,7 @@ paths are independent and neither disables the other automatically.
 | `yunkan.ptz` | Move a pan/tilt/zoom camera; auto-stops after a short duration | Free (admin) |
 | `yunkan.tts_broadcast` | Speak a message on a camera speaker | Pro (admin) |
 | `yunkan.snapshot` | Capture a fresh snapshot to a file | Free |
+| `yunkan.export` | Export a recording for a time range to a downloadable clip | Free |
 
 Example:
 
@@ -103,15 +121,32 @@ data:
   duration: 1
 ```
 
+## Automations & notifications
+
+Each camera device exposes **device triggers** ("Person detected", "Vehicle
+detected", …) — pick one when creating an automation and select the camera. The
+trigger data includes the recognised name / licence plate.
+
+A ready-made notification blueprint is included. It is not auto-installed, so
+import it once by URL (My Home Assistant → Blueprints → Import, or **Settings →
+Automations & scenes → Blueprints → Import blueprint**) using the raw URL of
+`blueprints/automation/yunkan/camera_notification.yaml` in this repository. It
+sends a mobile notification with a snapshot when the selected camera detects
+something.
+
 ## Troubleshooting
 
 - **"Server hasn't finished setup"** — open the Yunkan web interface and create
   an admin account first, then add the integration.
-- **Live view is black but the camera works** — WebRTC couldn't reach port
-  `23515`; the stream falls back to HLS. Check port forwarding / the server's
-  public address.
+- **Live view is black but snapshots work** — WebRTC couldn't reach the media
+  plane on port `23515`. Check port forwarding / the server's public address.
 - **Detection switch or voice broadcast fails** — check that your account is an
   admin and that the server is on the Pro tier.
+- **A per-feature detection switch (face/plate/…) won't turn on** — the
+  per-*camera* switches are overrides on top of the server-wide setting. You can
+  turn a feature *off* for one camera, but a feature that is disabled server-wide
+  can't be enabled per camera. Turn it on first with the matching **server-wide**
+  switch on the Yunkan server device (or in Web Admin), then adjust per camera.
 
 Grab diagnostics from the integration's device page (credentials and stream keys
 are redacted) when reporting an issue.

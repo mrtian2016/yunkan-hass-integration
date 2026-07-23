@@ -37,26 +37,148 @@
   },
   "entity": {
     "binary_sensor": {
-      "online": { "name": "在線" },
-      "person": { "name": "人" },
-      "vehicle": { "name": "車輛" },
-      "animal": { "name": "動物" },
-      "package": { "name": "包裹" },
-      "face": { "name": "人臉" },
-      "fall": { "name": "跌倒" },
-      "cry": { "name": "嬰兒哭聲" }
+      "online": {
+        "name": "在線"
+      },
+      "person": {
+        "name": "人"
+      },
+      "vehicle": {
+        "name": "車輛"
+      },
+      "animal": {
+        "name": "動物"
+      },
+      "package": {
+        "name": "包裹"
+      },
+      "face": {
+        "name": "人臉"
+      },
+      "fall": {
+        "name": "跌倒"
+      },
+      "cry": {
+        "name": "嬰兒哭聲"
+      },
+      "motion": {
+        "name": "移動"
+      }
     },
     "sensor": {
-      "last_event": { "name": "最近事件" }
+      "last_event": {
+        "name": "最近事件"
+      },
+      "person_count": {
+        "name": "人數"
+      },
+      "vehicle_count": {
+        "name": "車輛數"
+      },
+      "animal_count": {
+        "name": "動物數"
+      },
+      "package_count": {
+        "name": "包裹數"
+      },
+      "recognized_face": {
+        "name": "辨識人臉"
+      },
+      "recognized_plate": {
+        "name": "辨識車牌"
+      }
     },
     "switch": {
-      "detection": { "name": "AI 辨識" }
+      "detection": {
+        "name": "AI 辨識"
+      },
+      "recording": {
+        "name": "錄影"
+      },
+      "detect_object": {
+        "name": "物體偵測"
+      },
+      "detect_audio": {
+        "name": "聲音偵測"
+      },
+      "detect_face": {
+        "name": "人臉偵測"
+      },
+      "detect_plate": {
+        "name": "車牌偵測"
+      },
+      "detect_pose": {
+        "name": "姿態偵測"
+      },
+      "detect_gesture": {
+        "name": "手勢偵測"
+      },
+      "detect_package": {
+        "name": "包裹偵測"
+      },
+      "ptz_autotrack": {
+        "name": "自動追蹤"
+      },
+      "global_detect_object": {
+        "name": "全域物體偵測"
+      },
+      "global_detect_audio": {
+        "name": "全域聲音偵測"
+      },
+      "global_detect_face": {
+        "name": "全域人臉偵測"
+      },
+      "global_detect_plate": {
+        "name": "全域車牌偵測"
+      },
+      "global_detect_pose": {
+        "name": "全域姿態偵測"
+      },
+      "global_detect_gesture": {
+        "name": "全域手勢偵測"
+      },
+      "global_detect_package": {
+        "name": "全域包裹偵測"
+      },
+      "global_detect_motion": {
+        "name": "全域移動偵測"
+      }
     },
     "image": {
-      "latest_event": { "name": "最新事件" }
+      "latest_event": {
+        "name": "最新事件"
+      },
+      "latest_person": {
+        "name": "最新人"
+      },
+      "latest_vehicle": {
+        "name": "最新車輛"
+      },
+      "latest_animal": {
+        "name": "最新動物"
+      },
+      "latest_package": {
+        "name": "最新包裹"
+      },
+      "latest_face": {
+        "name": "最新人臉"
+      },
+      "latest_fall": {
+        "name": "最新跌倒"
+      },
+      "latest_cry": {
+        "name": "最新哭聲"
+      }
+    },
+    "camera": {
+      "birdseye": {
+        "name": "鳥瞰全景"
+      }
     },
     "update": {
-      "server": { "name": "伺服器" }
+      "server": {
+        "name": "伺服器"
+      }
     }
   },
   "services": {
@@ -75,6 +197,10 @@
         "duration": {
           "name": "時長",
           "description": "移動幾秒後停止。填 0 則持續移動直到下一條指令。"
+        },
+        "preset": {
+          "name": "預置位",
+          "description": "轉到指定的預置位。"
         }
       }
     },
@@ -109,12 +235,41 @@
           "description": "儲存 JPEG 的完整路徑。所在目錄需在 allowlist_external_dirs 中。"
         }
       }
+    },
+    "export": {
+      "name": "匯出錄影",
+      "description": "將某時間段的錄影匯出為可下載片段。",
+      "fields": {
+        "start": {
+          "name": "開始",
+          "description": "匯出範圍的起始時間。"
+        },
+        "end": {
+          "name": "結束",
+          "description": "匯出範圍的結束時間。"
+        },
+        "playback_factor": {
+          "name": "播放倍速",
+          "description": "即時，或 30 倍縮時。"
+        }
+      }
     }
   },
   "issues": {
     "pro_required": {
       "title": "需要雲瞰 Pro",
       "description": "此操作需要雲瞰 Pro 授權，但目前伺服器為免費版（狀態：{status}）。升級前 AI 辨識與語音喊話無法使用。"
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "person_detected": "偵測到人",
+      "vehicle_detected": "偵測到車輛",
+      "animal_detected": "偵測到動物",
+      "package_detected": "偵測到包裹",
+      "face_detected": "偵測到人臉",
+      "fall_detected": "偵測到跌倒",
+      "cry_detected": "偵測到嬰兒哭聲"
     }
   }
 }

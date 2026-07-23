@@ -16,6 +16,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv, entity_registry as er
 from homeassistant.helpers.service import async_extract_referenced_entity_ids
+from homeassistant.util import dt as dt_util
 
 from .api import YunkanApiError, YunkanProRequiredError
 from .const import DOMAIN, PTZ_DIRECTIONS
@@ -27,8 +28,10 @@ _LOGGER = logging.getLogger(__name__)
 SERVICE_PTZ = "ptz"
 SERVICE_TTS_BROADCAST = "tts_broadcast"
 SERVICE_SNAPSHOT = "snapshot"
+SERVICE_EXPORT = "export"
 
 ATTR_DIRECTION = "direction"
+ATTR_PRESET = "preset"
 ATTR_SPEED = "speed"
 ATTR_DURATION = "duration"
 ATTR_MESSAGE = "message"
@@ -36,10 +39,19 @@ ATTR_VOICE = "voice"
 ATTR_RATE = "rate"
 ATTR_PITCH = "pitch"
 ATTR_FILENAME = "filename"
+ATTR_START = "start"
+ATTR_END = "end"
+ATTR_PLAYBACK_FACTOR = "playback_factor"
+
+PLAYBACK_REALTIME = "realtime"
+# Speed must be one of the backend's allowed_speeds (default [8, 30, 60, 120]).
+PLAYBACK_TIMELAPSE = "timelapse_30x"
+_TIMELAPSE_SPEED = 30
 
 _PTZ_SCHEMA = cv.make_entity_service_schema(
     {
-        vol.Required(ATTR_DIRECTION): vol.In(PTZ_DIRECTIONS),
+        vol.Exclusive(ATTR_DIRECTION, "ptz_target"): vol.In(PTZ_DIRECTIONS),
+        vol.Exclusive(ATTR_PRESET, "ptz_target"): cv.string,
         vol.Optional(ATTR_SPEED, default=0.5): vol.All(
             vol.Coerce(float), vol.Range(min=0.0, max=1.0)
         ),
@@ -62,6 +74,16 @@ _SNAPSHOT_SCHEMA = cv.make_entity_service_schema(
     {vol.Required(ATTR_FILENAME): cv.template}
 )
 
+_EXPORT_SCHEMA = cv.make_entity_service_schema(
+    {
+        vol.Required(ATTR_START): cv.datetime,
+        vol.Required(ATTR_END): cv.datetime,
+        vol.Optional(ATTR_PLAYBACK_FACTOR, default=PLAYBACK_REALTIME): vol.In(
+            [PLAYBACK_REALTIME, PLAYBACK_TIMELAPSE]
+        ),
+    }
+)
+
 
 @callback
 def async_setup_services(hass: HomeAssistant) -> None:
@@ -71,15 +93,38 @@ def async_setup_services(hass: HomeAssistant) -> None:
         return
 
     async def _handle_ptz(call: ServiceCall) -> None:
-        direction = call.data[ATTR_DIRECTION]
+        direction = call.data.get(ATTR_DIRECTION)
+        preset = call.data.get(ATTR_PRESET)
         speed = call.data[ATTR_SPEED]
         duration = call.data[ATTR_DURATION]
+        if not direction and not preset:
+            raise ServiceValidationError("Provide either a direction or a preset")
         for coordinator, camera_id in _resolve_targets(hass, call):
             try:
-                await coordinator.client.async_ptz(camera_id, direction, speed)
-                if duration > 0:
-                    await asyncio.sleep(duration)
-                    await coordinator.client.async_ptz_stop(camera_id)
+                if preset:
+                    token = await _resolve_preset(coordinator, camera_id, preset)
+                    await coordinator.client.async_ptz_goto_preset(
+                        camera_id, token, speed
+                    )
+                else:
+                    await coordinator.client.async_ptz(camera_id, direction, speed)
+                    if duration > 0:
+                        try:
+                            await asyncio.sleep(duration)
+                        finally:
+                            # Always send the stop, even if this service task is
+                            # cancelled mid-move (reload/shutdown) — a continuous
+                            # move otherwise runs to the mechanical limit. Shield
+                            # it from the cancellation and never let a stop error
+                            # mask the original (Cancelled)Error.
+                            try:
+                                await asyncio.shield(
+                                    coordinator.client.async_ptz_stop(camera_id)
+                                )
+                            except Exception:  # noqa: BLE001
+                                _LOGGER.debug(
+                                    "PTZ auto-stop failed for %s", camera_id
+                                )
             except YunkanApiError as err:
                 raise HomeAssistantError(f"PTZ command failed: {err}") from err
 
@@ -123,6 +168,25 @@ def async_setup_services(hass: HomeAssistant) -> None:
 
             await hass.async_add_executor_job(_write, filename, image)
 
+    async def _handle_export(call: ServiceCall) -> None:
+        start_ms = int(dt_util.as_utc(call.data[ATTR_START]).timestamp() * 1000)
+        end_ms = int(dt_util.as_utc(call.data[ATTR_END]).timestamp() * 1000)
+        timelapse = call.data[ATTR_PLAYBACK_FACTOR] == PLAYBACK_TIMELAPSE
+        if end_ms <= start_ms:
+            raise ServiceValidationError("end must be after start")
+        for coordinator, camera_id in _resolve_targets(hass, call):
+            try:
+                if timelapse:
+                    await coordinator.client.async_create_timelapse(
+                        camera_id, start_ms, end_ms, _TIMELAPSE_SPEED
+                    )
+                else:
+                    await coordinator.client.async_create_export(
+                        camera_id, start_ms, end_ms
+                    )
+            except YunkanApiError as err:
+                raise HomeAssistantError(f"Export failed: {err}") from err
+
     hass.services.async_register(DOMAIN, SERVICE_PTZ, _handle_ptz, schema=_PTZ_SCHEMA)
     hass.services.async_register(
         DOMAIN, SERVICE_TTS_BROADCAST, _handle_tts, schema=_TTS_SCHEMA
@@ -130,7 +194,24 @@ def async_setup_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN, SERVICE_SNAPSHOT, _handle_snapshot, schema=_SNAPSHOT_SCHEMA
     )
+    hass.services.async_register(
+        DOMAIN, SERVICE_EXPORT, _handle_export, schema=_EXPORT_SCHEMA
+    )
     domain_data["services_registered"] = True
+
+
+async def _resolve_preset(
+    coordinator: YunkanCoordinator, camera_id: str, preset: str
+) -> str:
+    """Resolve a preset name to its token, falling back to using it as a token."""
+    try:
+        presets = await coordinator.client.async_ptz_presets(camera_id)
+    except YunkanApiError:
+        presets = []
+    for item in presets:
+        if isinstance(item, dict) and preset in (item.get("name"), item.get("token")):
+            return str(item.get("token") or preset)
+    return preset
 
 
 def _resolve_targets(
@@ -145,6 +226,10 @@ def _resolve_targets(
     for entity_id in entity_ids:
         entry = registry.async_get(entity_id)
         if entry is None or entry.platform != DOMAIN or entry.domain != "camera":
+            continue
+        # Only real backend cameras ("{entry}_{camera_id}_camera"); the birdseye
+        # overview has no per-camera id and can't be targeted by these services.
+        if not entry.unique_id.endswith("_camera"):
             continue
         config_entry = hass.config_entries.async_get_entry(entry.config_entry_id or "")
         coordinator = getattr(config_entry, "runtime_data", None)

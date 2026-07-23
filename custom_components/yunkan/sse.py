@@ -17,6 +17,8 @@ import time
 
 import aiohttp
 
+from homeassistant.core import HomeAssistant
+
 from .api import YunkanApiClient, YunkanApiError
 
 _LOGGER = logging.getLogger(__name__)
@@ -33,8 +35,11 @@ EventCallback = Callable[[dict], Awaitable[None]]
 class YunkanSSEClient:
     """Consume the Yunkan SSE event stream in the background."""
 
-    def __init__(self, client: YunkanApiClient, on_event: EventCallback) -> None:
+    def __init__(
+        self, hass: HomeAssistant, client: YunkanApiClient, on_event: EventCallback
+    ) -> None:
         """Store the REST client and the per-event async callback."""
+        self._hass = hass
         self._client = client
         self._on_event = on_event
         self._task: asyncio.Task | None = None
@@ -58,7 +63,9 @@ class YunkanSSEClient:
         """Start the background reconnect loop."""
         if self._task is None or self._task.done():
             self._closing = False
-            self._task = asyncio.create_task(self._run(), name="yunkan_sse")
+            self._task = self._hass.async_create_background_task(
+                self._run(), name="yunkan_sse"
+            )
 
     async def stop(self) -> None:
         """Cancel the background loop and wait for it to finish."""
@@ -84,6 +91,11 @@ class YunkanSSEClient:
             except (YunkanApiError, aiohttp.ClientError, TimeoutError, OSError) as err:
                 self._connected = False
                 _LOGGER.debug("SSE connection dropped: %s; retrying in %.0fs", err, backoff)
+            except RuntimeError as err:
+                # e.g. "Session is closed" during shutdown — stop, don't spin.
+                self._connected = False
+                _LOGGER.debug("SSE loop stopping: %s", err)
+                break
             except Exception:  # noqa: BLE001 - background task must never die silently
                 self._connected = False
                 _LOGGER.exception("Unexpected error in SSE loop; retrying in %.0fs", backoff)
@@ -131,6 +143,9 @@ class YunkanSSEClient:
                 if line.startswith("data:"):
                     data_lines.append(line[5:].lstrip(" "))
                 # "event:" / "id:" fields are ignored; business frames are unnamed.
+        # Stream ended cleanly (server closed it); clear connected so it doesn't
+        # read stale-True through the reconnect backoff.
+        self._connected = False
 
     async def _dispatch(self, data_lines: list[str]) -> None:
         """Decode a completed SSE frame and forward it."""
