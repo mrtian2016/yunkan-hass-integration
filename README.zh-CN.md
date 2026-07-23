@@ -50,7 +50,7 @@
 
 ### HACS（推荐）
 
-[![在 HACS 中打开](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=yunkan&repository=yunkan-hass-integration&category=integration)
+[![在 HACS 中打开](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=mrtian2016&repository=yunkan-hass-integration&category=integration)
 
 点击上方按钮即可在 HACS 中打开本仓库，安装 **Yunkan** 后重启 Home Assistant。或手动
 添加：
