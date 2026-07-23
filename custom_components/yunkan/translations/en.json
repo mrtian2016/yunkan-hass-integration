@@ -179,6 +179,39 @@
       "server": {
         "name": "Server"
       }
+    },
+    "button": {
+      "refresh_snapshot": {
+        "name": "Refresh snapshot"
+      },
+      "ptz_up": {
+        "name": "Move up"
+      },
+      "ptz_down": {
+        "name": "Move down"
+      },
+      "ptz_left": {
+        "name": "Move left"
+      },
+      "ptz_right": {
+        "name": "Move right"
+      },
+      "ptz_stop": {
+        "name": "Stop"
+      },
+      "tts_broadcast": {
+        "name": "Broadcast"
+      }
+    },
+    "select": {
+      "ptz_preset": {
+        "name": "Preset"
+      }
+    },
+    "text": {
+      "tts_message": {
+        "name": "Broadcast message"
+      }
     }
   },
   "services": {
@@ -250,7 +283,7 @@
         },
         "playback_factor": {
           "name": "Playback factor",
-          "description": "realtime, or a 25x timelapse."
+          "description": "realtime, or a 30x timelapse."
         }
       }
     }
@@ -264,6 +297,13 @@
       "face_detected": "Face detected",
       "fall_detected": "Fall detected",
       "cry_detected": "Baby cry detected"
+    },
+    "action_type": {
+      "ptz_move": "Move a PTZ camera",
+      "ptz_preset": "Go to a PTZ preset",
+      "tts_broadcast": "Voice broadcast",
+      "snapshot": "Save a snapshot",
+      "export": "Export a recording"
     }
   },
   "issues": {

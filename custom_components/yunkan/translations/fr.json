@@ -179,6 +179,39 @@
       "birdseye": {
         "name": "Vue d'ensemble"
       }
+    },
+    "button": {
+      "refresh_snapshot": {
+        "name": "Actualiser l'instantané"
+      },
+      "ptz_up": {
+        "name": "Vers le haut"
+      },
+      "ptz_down": {
+        "name": "Vers le bas"
+      },
+      "ptz_left": {
+        "name": "Vers la gauche"
+      },
+      "ptz_right": {
+        "name": "Vers la droite"
+      },
+      "ptz_stop": {
+        "name": "Arrêter"
+      },
+      "tts_broadcast": {
+        "name": "Diffuser"
+      }
+    },
+    "select": {
+      "ptz_preset": {
+        "name": "Préréglage"
+      }
+    },
+    "text": {
+      "tts_message": {
+        "name": "Message à diffuser"
+      }
     }
   },
   "services": {
@@ -270,6 +303,13 @@
       "face_detected": "Visage détecté",
       "fall_detected": "Chute détectée",
       "cry_detected": "Pleurs de bébé détectés"
+    },
+    "action_type": {
+      "ptz_move": "Déplacer une caméra PTZ",
+      "ptz_preset": "Aller à un préréglage PTZ",
+      "tts_broadcast": "Diffusion vocale",
+      "snapshot": "Enregistrer un instantané",
+      "export": "Exporter un enregistrement"
     }
   }
 }

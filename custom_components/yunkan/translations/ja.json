@@ -179,6 +179,39 @@
       "birdseye": {
         "name": "バードアイ"
       }
+    },
+    "button": {
+      "refresh_snapshot": {
+        "name": "スナップショット更新"
+      },
+      "ptz_up": {
+        "name": "上へ"
+      },
+      "ptz_down": {
+        "name": "下へ"
+      },
+      "ptz_left": {
+        "name": "左へ"
+      },
+      "ptz_right": {
+        "name": "右へ"
+      },
+      "ptz_stop": {
+        "name": "停止"
+      },
+      "tts_broadcast": {
+        "name": "ブロードキャスト"
+      }
+    },
+    "select": {
+      "ptz_preset": {
+        "name": "プリセット"
+      }
+    },
+    "text": {
+      "tts_message": {
+        "name": "ブロードキャスト内容"
+      }
     }
   },
   "services": {
@@ -270,6 +303,13 @@
       "face_detected": "顔を検出",
       "fall_detected": "転倒を検出",
       "cry_detected": "赤ちゃんの泣き声を検出"
+    },
+    "action_type": {
+      "ptz_move": "PTZ カメラを動かす",
+      "ptz_preset": "PTZ プリセットへ移動",
+      "tts_broadcast": "音声ブロードキャスト",
+      "snapshot": "スナップショットを保存",
+      "export": "録画をエクスポート"
     }
   }
 }

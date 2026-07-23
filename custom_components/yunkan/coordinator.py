@@ -19,6 +19,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
@@ -114,6 +115,9 @@ class YunkanCoordinator(DataUpdateCoordinator[YunkanData]):
         # Per-category live object counts per camera (fed by live-tracks);
         # occupancy = count > 0.
         self.tracks_counts: dict[str, dict[str, int]] = {}
+        # Draft TTS message per camera, shared by the message text entity (writer)
+        # and the Broadcast button (reader) so users can test voice broadcast.
+        self.tts_messages: dict[str, str] = {}
         self.sse = YunkanSSEClient(hass, client, self._handle_event)
         self._tracks_clients: dict[str, YunkanTracksClient] = {}
         self._tracks_started = False
@@ -124,6 +128,8 @@ class YunkanCoordinator(DataUpdateCoordinator[YunkanData]):
         # Serialise the master detection toggle: it hits a *flip* endpoint, so two
         # concurrent turn_on calls (or a double-tap) must not double-flip.
         self._detection_locks: dict[str, asyncio.Lock] = {}
+        # Pending PTZ safety-stop timers (camera_id -> cancel callback).
+        self._ptz_stop_cancels: dict[str, CALLBACK_TYPE] = {}
 
     def overrides_lock(self, camera_id: str) -> asyncio.Lock:
         """Return the per-camera lock guarding detection_overrides updates."""
@@ -132,6 +138,32 @@ class YunkanCoordinator(DataUpdateCoordinator[YunkanData]):
     def detection_lock(self, camera_id: str) -> asyncio.Lock:
         """Return the per-camera lock guarding the master detection toggle."""
         return self._detection_locks.setdefault(camera_id, asyncio.Lock())
+
+    def schedule_ptz_safety_stop(self, camera_id: str, delay: float) -> None:
+        """Auto-stop a continuous PTZ move after ``delay`` seconds.
+
+        A direction button starts a continuous move (the backend ContinuousMove
+        has no timeout); this guarantees it stops even if the user never presses
+        Stop. Re-arming for the same camera cancels the previous timer.
+        """
+        self.cancel_ptz_safety_stop(camera_id)
+
+        async def _safety_stop(_now: Any) -> None:
+            self._ptz_stop_cancels.pop(camera_id, None)
+            try:
+                await self.client.async_ptz_stop(camera_id)
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("PTZ safety stop failed for %s: %s", camera_id, err)
+
+        self._ptz_stop_cancels[camera_id] = async_call_later(
+            self.hass, delay, _safety_stop
+        )
+
+    def cancel_ptz_safety_stop(self, camera_id: str) -> None:
+        """Cancel a pending PTZ safety-stop timer for a camera, if any."""
+        cancel = self._ptz_stop_cancels.pop(camera_id, None)
+        if cancel is not None:
+            cancel()
 
     async def _async_update_data(self) -> YunkanData:
         """Fetch the current camera list, license, version and detection state."""
@@ -203,6 +235,17 @@ class YunkanCoordinator(DataUpdateCoordinator[YunkanData]):
 
     async def async_stop_stream(self) -> None:
         """Stop the SSE event stream and all live-tracks streams."""
+        # Cancel pending PTZ safety timers, but still send their stop: a camera
+        # mid-move when the entry unloads / reloads must not be left panning (the
+        # new coordinator won't know about the in-flight move).
+        pending = list(self._ptz_stop_cancels.items())
+        self._ptz_stop_cancels.clear()
+        for camera_id, cancel in pending:
+            cancel()
+            try:
+                await self.client.async_ptz_stop(camera_id)
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.debug("PTZ stop on teardown failed for %s: %s", camera_id, err)
         if self._unsub_reconcile is not None:
             self._unsub_reconcile()
             self._unsub_reconcile = None
@@ -226,6 +269,9 @@ class YunkanCoordinator(DataUpdateCoordinator[YunkanData]):
             # Drop the retained latest event too, so a camera re-added with the
             # same id doesn't seed its image / last-event entity from stale data.
             self.latest_events.pop(camera_id, None)
+            # Same for a drafted broadcast message, so a re-added camera doesn't
+            # resurrect text typed in its previous life.
+            self.tts_messages.pop(camera_id, None)
             self.hass.async_create_task(client.stop())
 
     async def _handle_tracks(self, camera_id: str, counts: dict[str, int]) -> None:

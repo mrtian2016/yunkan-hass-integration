@@ -130,6 +130,10 @@ def async_setup_services(hass: HomeAssistant) -> None:
 
     async def _handle_tts(call: ServiceCall) -> None:
         message = call.data[ATTR_MESSAGE]
+        # Guard here so both the service and the device-action path reject an
+        # empty broadcast (the Broadcast button already guards its own path).
+        if not message.strip():
+            raise ServiceValidationError("message must not be empty")
         voice = call.data.get(ATTR_VOICE)
         rate = call.data.get(ATTR_RATE)
         pitch = call.data.get(ATTR_PITCH)

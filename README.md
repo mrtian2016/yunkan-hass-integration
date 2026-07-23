@@ -1,5 +1,7 @@
 # Yunkan for Home Assistant
 
+**English** | [中文](README.zh-CN.md)
+
 A [Home Assistant](https://www.home-assistant.io/) custom integration for a
 self-hosted **Yunkan** camera server ([yun-kan.com](https://yun-kan.com)).
 
@@ -58,6 +60,11 @@ server — the integration stores nothing but the connection details.
 ## Installation
 
 ### HACS (recommended)
+
+[![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=yunkan&repository=yunkan-hass-integration&category=integration)
+
+Click the button above to open this repository in HACS, install **Yunkan** and
+restart Home Assistant. Or add it manually:
 
 1. In HACS, add this repository as a **custom repository** (category
    *Integration*).

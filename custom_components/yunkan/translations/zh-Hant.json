@@ -179,6 +179,39 @@
       "server": {
         "name": "伺服器"
       }
+    },
+    "button": {
+      "refresh_snapshot": {
+        "name": "重新整理快照"
+      },
+      "ptz_up": {
+        "name": "上移"
+      },
+      "ptz_down": {
+        "name": "下移"
+      },
+      "ptz_left": {
+        "name": "左移"
+      },
+      "ptz_right": {
+        "name": "右移"
+      },
+      "ptz_stop": {
+        "name": "停止"
+      },
+      "tts_broadcast": {
+        "name": "喊話"
+      }
+    },
+    "select": {
+      "ptz_preset": {
+        "name": "預置位"
+      }
+    },
+    "text": {
+      "tts_message": {
+        "name": "喊話內容"
+      }
     }
   },
   "services": {
@@ -270,6 +303,13 @@
       "face_detected": "偵測到人臉",
       "fall_detected": "偵測到跌倒",
       "cry_detected": "偵測到嬰兒哭聲"
+    },
+    "action_type": {
+      "ptz_move": "轉動雲台",
+      "ptz_preset": "轉到雲台預置位",
+      "tts_broadcast": "語音喊話",
+      "snapshot": "儲存快照",
+      "export": "匯出錄影"
     }
   }
 }

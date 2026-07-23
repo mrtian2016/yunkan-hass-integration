@@ -179,6 +179,39 @@
       "server": {
         "name": "服务器"
       }
+    },
+    "button": {
+      "refresh_snapshot": {
+        "name": "刷新快照"
+      },
+      "ptz_up": {
+        "name": "上移"
+      },
+      "ptz_down": {
+        "name": "下移"
+      },
+      "ptz_left": {
+        "name": "左移"
+      },
+      "ptz_right": {
+        "name": "右移"
+      },
+      "ptz_stop": {
+        "name": "停止"
+      },
+      "tts_broadcast": {
+        "name": "喊话"
+      }
+    },
+    "select": {
+      "ptz_preset": {
+        "name": "预置位"
+      }
+    },
+    "text": {
+      "tts_message": {
+        "name": "喊话内容"
+      }
     }
   },
   "services": {
@@ -270,6 +303,13 @@
       "face_detected": "检测到人脸",
       "fall_detected": "检测到跌倒",
       "cry_detected": "检测到婴儿哭声"
+    },
+    "action_type": {
+      "ptz_move": "转动云台",
+      "ptz_preset": "转到云台预置位",
+      "tts_broadcast": "语音喊话",
+      "snapshot": "保存快照",
+      "export": "导出录像"
     }
   }
 }
