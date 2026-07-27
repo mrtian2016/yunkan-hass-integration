@@ -4,10 +4,14 @@ A "latest event" image per camera plus one per detection category. The SSE
 stream tells us when a new event snapshot exists; the JPEG itself (with
 detection boxes drawn server-side) is fetched on demand and cached by the base
 ImageEntity.
+
+Per-category images exist only while the detection feature behind them is
+enabled (see feature_gate); the "latest event" image is always present.
 """
 
 from __future__ import annotations
 
+from functools import partial
 import logging
 from typing import Any
 
@@ -19,6 +23,7 @@ from homeassistant.util import dt as dt_util
 
 from . import YunkanConfigEntry
 from .const import (
+    CATEGORY_FEATURE,
     DEFAULT_SNAPSHOT_BBOX,
     DEFAULT_SNAPSHOT_CROP,
     EVENT_CATEGORIES,
@@ -28,6 +33,7 @@ from .const import (
 )
 from .coordinator import YunkanCoordinator, signal_event
 from .entity import YunkanCameraEntity
+from .feature_gate import FeatureEntity, async_setup_feature_entities
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,13 +48,24 @@ async def async_setup_entry(
     """Set up Yunkan event images (latest + per category) from a config entry."""
     coordinator = entry.runtime_data
     entities: list[ImageEntity] = []
+    specs: list[FeatureEntity] = []
     for camera_id in coordinator.data.cameras:
         entities.append(YunkanLatestEventImage(hass, coordinator, camera_id))
-        entities.extend(
-            YunkanLatestEventImage(hass, coordinator, camera_id, category)
+        specs.extend(
+            FeatureEntity(
+                camera_id=camera_id,
+                feature=CATEGORY_FEATURE[category],
+                key=category,
+                factory=partial(
+                    YunkanLatestEventImage, hass, coordinator, camera_id, category
+                ),
+            )
             for category in EVENT_CATEGORIES
         )
     async_add_entities(entities)
+    async_setup_feature_entities(
+        hass, entry, coordinator, async_add_entities, "image", specs
+    )
 
 
 class YunkanLatestEventImage(YunkanCameraEntity, ImageEntity):

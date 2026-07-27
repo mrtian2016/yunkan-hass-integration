@@ -1,14 +1,18 @@
 """Binary sensor platform for the Yunkan integration.
 
 Per camera, one occupancy-style sensor per detection category (person, vehicle,
-animal, package, face, fall, baby-cry) plus a connectivity sensor. The category
+animal, package, face, fall, baby-cry, gesture) plus a connectivity sensor. The category
 sensors are driven by the real-time SSE stream: detection events are momentary,
 so each sensor latches ON on a matching event and auto-resets after a short
 delay, mirroring the server's MQTT-discovery behaviour.
+
+Category sensors exist only while the detection feature behind them is enabled
+(see feature_gate); the online and motion sensors are always present.
 """
 
 from __future__ import annotations
 
+from functools import partial
 import logging
 import time
 from typing import Any
@@ -24,6 +28,7 @@ from homeassistant.helpers.event import async_call_later
 
 from . import YunkanConfigEntry
 from .const import (
+    CATEGORY_FEATURE,
     CATEGORY_META,
     EVENT_CATEGORIES,
     EVENT_CATEGORY_MAP,
@@ -32,6 +37,7 @@ from .const import (
 from .coordinator import YunkanCoordinator, signal_event, signal_tracks
 from .event_utils import event_attributes
 from .entity import YunkanCameraEntity
+from .feature_gate import FeatureEntity, async_setup_feature_entities
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,14 +50,24 @@ async def async_setup_entry(
     """Set up Yunkan binary sensors from a config entry."""
     coordinator = entry.runtime_data
     entities: list[BinarySensorEntity] = []
+    specs: list[FeatureEntity] = []
     for camera_id in coordinator.data.cameras:
         entities.append(YunkanOnlineSensor(coordinator, camera_id))
         entities.append(YunkanMotionSensor(coordinator, camera_id))
-        entities.extend(
-            YunkanEventSensor(coordinator, camera_id, category)
+        # Category sensors only exist while the feature that produces them is on.
+        specs.extend(
+            FeatureEntity(
+                camera_id=camera_id,
+                feature=CATEGORY_FEATURE[category],
+                key=category,
+                factory=partial(YunkanEventSensor, coordinator, camera_id, category),
+            )
             for category in EVENT_CATEGORIES
         )
     async_add_entities(entities)
+    async_setup_feature_entities(
+        hass, entry, coordinator, async_add_entities, "binary_sensor", specs
+    )
 
 
 class YunkanOnlineSensor(YunkanCameraEntity, BinarySensorEntity):

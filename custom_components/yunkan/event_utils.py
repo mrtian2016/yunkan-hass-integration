@@ -78,6 +78,13 @@ def event_attributes(event: dict[str, Any]) -> dict[str, Any]:
         if extra.get("color"):
             attrs["plate_color"] = extra["color"]
 
+    # Gesture events carry the label at the top level ("like" / "palm" / ...);
+    # a recognised face on the same person track rides along as face_name.
+    if extra.get("gesture"):
+        attrs["gesture"] = extra["gesture"]
+        if extra.get("face_name"):
+            attrs["name"] = attrs.get("name") or extra["face_name"]
+
     labels = [
         det.get("label")
         for det in extra.get("detections", [])

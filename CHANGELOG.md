@@ -2,7 +2,29 @@
 
 ## 0.4.0
 
-Event snapshot rendering options (requests from the field — thanks Benjamin!).
+Event snapshot rendering options (requests from the field — thanks Benjamin!)
+and full gesture coverage.
+
+- **Entities follow the features you enable.** Detection categories whose
+  feature is switched off (per camera or server-wide) no longer create entities
+  at all — no Face sensor / "latest face" image / "recognised face" sensor on a
+  camera with face recognition off, and likewise for object, package, pose
+  (fall), audio (baby-cry), plate and gesture. Turning a feature back on
+  re-creates its entities within one poll; no reload needed — they come back
+  with the same entity ids and your customisations (rename, area, icon, labels)
+  intact. Motion, Online, the camera entity and every switch are always present.
+
+  **Heads-up when upgrading:** entities for features you don't run will
+  disappear on the first poll after the update. If a dashboard card or
+  automation referenced one (say `image.<camera>_latest_face` on a server
+  without face recognition), it will report a missing entity — turn that
+  detection feature on and the entity returns, unchanged, within 30 seconds.
+- **Gesture events**, end to end: a per-camera **Gesture** binary sensor
+  (pulses on each gesture event, carrying the gesture label and the recognised
+  person name as attributes), a **Latest gesture** snapshot image entity, and a
+  **Recognised gesture** sensor holding the last gesture label ("like" /
+  "palm" / ...) — same pattern as the recognised face / plate sensors. Gesture
+  never latches from live tracks (it is momentary by nature).
 
 - **Options flow** (Settings → Integrations → Yunkan → Configure): two new
   toggles for how event images are rendered, applied to all latest-event /

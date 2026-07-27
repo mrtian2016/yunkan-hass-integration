@@ -54,3 +54,30 @@ def test_plain_event_has_no_name_or_plate() -> None:
     assert "name" not in attrs
     assert "plate" not in attrs
     assert attrs["confidence"] == 0.8
+
+
+def test_gesture_event_exposes_label_and_face_name() -> None:
+    """A gesture event surfaces the gesture label; a recognised face on the
+    same person track rides along as name."""
+    event = {
+        "id": 88,
+        "event_type": "gesture",
+        "confidence": 0.91,
+        "extra": (
+            '{"gesture": "like", "confidence": 0.91, "face_name": "田继业",'
+            ' "detections": [{"label": "person", "score": 0.9},'
+            ' {"label": "gesture", "score": 0.91}]}'
+        ),
+    }
+    attrs = event_attributes(event)
+    assert attrs["gesture"] == "like"
+    assert attrs["name"] == "田继业"
+    assert "gesture" in attrs["objects"]
+
+
+def test_gesture_event_without_face() -> None:
+    """A gesture with no recognised face carries no name key."""
+    event = {"id": 89, "event_type": "gesture", "extra": '{"gesture": "palm"}'}
+    attrs = event_attributes(event)
+    assert attrs["gesture"] == "palm"
+    assert "name" not in attrs

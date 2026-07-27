@@ -61,6 +61,9 @@
       "cry": {
         "name": "婴儿哭声"
       },
+      "gesture": {
+        "name": "手势"
+      },
       "motion": {
         "name": "移动"
       }
@@ -86,6 +89,9 @@
       },
       "recognized_plate": {
         "name": "识别车牌"
+      },
+      "recognized_gesture": {
+        "name": "识别手势"
       }
     },
     "switch": {
@@ -168,6 +174,9 @@
       },
       "latest_cry": {
         "name": "最新哭声"
+      },
+      "latest_gesture": {
+        "name": "最新手势"
       }
     },
     "camera": {
@@ -302,7 +311,8 @@
       "package_detected": "检测到包裹",
       "face_detected": "检测到人脸",
       "fall_detected": "检测到跌倒",
-      "cry_detected": "检测到婴儿哭声"
+      "cry_detected": "检测到婴儿哭声",
+      "gesture_detected": "检测到手势"
     },
     "action_type": {
       "ptz_move": "转动云台",

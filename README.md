@@ -20,11 +20,19 @@ server — the integration stores nothing but the connection details.
   This unlocks the rest of the HA camera ecosystem: picture-glance cards, area
   dashboards, HomeKit export and `camera.snapshot`.
 - **Detection occupancy sensors** per camera — person, vehicle, animal, package,
-  face, fall and baby-cry. They turn on the instant an event fires (carrying the
-  recognised name / licence plate as attributes) and stay on while the object is
-  present (live tracking), plus a generic **Motion** and an **Online** sensor.
+  face, fall, baby-cry and gesture. They turn on the instant an event fires
+  (carrying the recognised name / licence plate / gesture as attributes) and
+  stay on while the object is present (live tracking; gesture pulses only),
+  plus a generic **Motion** and an **Online** sensor.
 - **Object-count** sensors (live person / vehicle / animal / package counts) and
-  **Recognised face** / **Recognised plate** sensors per camera.
+  **Recognised face** / **Recognised plate** / **Recognised gesture** sensors
+  per camera.
+- **Only the features you actually run** get entities: a camera with face
+  recognition switched off carries no Face sensor, no "latest face" image and no
+  "recognised face" sensor. Switch the feature back on (per camera or
+  server-wide) and its entities come back within one poll — same entity ids,
+  customisations intact, no reload needed. Motion, Online, the camera and the
+  switches are always present.
 - **Latest-event image** per camera plus a **latest snapshot per category**
   (with detection boxes drawn) for rich notifications.
 - **Last-event** timestamp sensor with the event category, name, plate and

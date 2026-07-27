@@ -21,7 +21,7 @@ import aiohttp
 from homeassistant.core import HomeAssistant
 
 from .api import YunkanApiClient, YunkanApiError
-from .const import EVENT_CATEGORY_MAP, LIVE_TRACKS_STALE
+from .const import EVENT_CATEGORY_MAP, LIVE_TRACKS_STALE, MOMENTARY_CATEGORIES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ def _count_categories(tracks: list[dict]) -> dict[str, int]:
         if not isinstance(track, dict):
             continue
         category = EVENT_CATEGORY_MAP.get(track.get("label", ""))
-        if category:
+        if category and category not in MOMENTARY_CATEGORIES:
             counts[category] = counts.get(category, 0) + 1
         if track.get("name"):
             counts["face"] = counts.get("face", 0) + 1

@@ -168,8 +168,8 @@ LIVE_GRANT_REFRESH_RATIO: Final = 0.8
 
 # --- Event category mapping (mirrors backend actions/mqtt.py) ---
 # Raw detection event_type -> merged binary_sensor category. Event types absent
-# from this map (gesture / plate / motion / package_arrival ...) are intentionally
-# NOT surfaced as per-camera occupancy sensors, matching MQTT discovery behaviour.
+# from this map (plate / motion / zone transitions ...) are intentionally NOT
+# surfaced as per-camera occupancy sensors, matching MQTT discovery behaviour.
 EVENT_CATEGORY_MAP: Final[dict[str, str]] = {
     "person": "person",
     "car": "vehicle",
@@ -189,6 +189,24 @@ EVENT_CATEGORY_MAP: Final[dict[str, str]] = {
     "face": "face",
     "fall": "fall",
     "cry": "cry",
+    "gesture": "gesture",
+}
+
+# Which detection feature produces each category. A camera with the feature
+# switched off (server-wide or per camera) gets no entities for that category at
+# all — an occupancy sensor / snapshot image that can never fire is just noise.
+# Keys must cover every category in CATEGORY_META (asserted by the tests).
+CATEGORY_FEATURE: Final[dict[str, str]] = {
+    "person": "object",
+    "vehicle": "object",
+    "animal": "object",
+    "package": "package",
+    "face": "face",
+    # Fall detection is the pose model's output.
+    "fall": "pose",
+    # Baby-cry detection is the audio model's output.
+    "cry": "audio",
+    "gesture": "gesture",
 }
 
 # category -> (English name, HA device_class, icon). Mirrors CATEGORY_META.
@@ -200,7 +218,12 @@ CATEGORY_META: Final[dict[str, tuple[str, str, str]]] = {
     "face": ("Face", "occupancy", "mdi:face-recognition"),
     "fall": ("Fall", "safety", "mdi:human-handsdown"),
     "cry": ("Baby Cry", "sound", "mdi:emoticon-cry-outline"),
+    "gesture": ("Gesture", "occupancy", "mdi:hand-wave"),
 }
+
+# Categories that are momentary by nature: they pulse on events only and must
+# never be latched by live tracks (a gesture is an instant, not a presence).
+MOMENTARY_CATEGORIES: Final = ("gesture",)
 
 # Ordered categories used to lay out binary_sensor entities per camera.
 EVENT_CATEGORIES: Final = tuple(CATEGORY_META.keys())

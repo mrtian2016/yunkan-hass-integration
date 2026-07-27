@@ -93,6 +93,27 @@ class YunkanData:
         """Return whether server-wide detection settings were successfully read."""
         return bool(self.global_settings)
 
+    def should_expose_feature(self, camera_id: str, feature: str) -> bool:
+        """Return whether a camera should carry entities for a detection feature.
+
+        Resolves the backend kill-switch the same way the feature switch does —
+        a per-camera override of ``False`` disables, anything else defers to the
+        server-wide setting — with one deliberate difference: when the
+        server-wide settings could not be read (a non-admin account), assume
+        **enabled** rather than falling back to the shipped defaults. Guessing
+        wrong here hides entities that may well be live, which is far worse than
+        showing one that stays quiet.
+        """
+        camera = self.cameras.get(camera_id)
+        if camera is None:
+            return False
+        overrides = camera.get("detection_overrides") or {}
+        if overrides.get(DETECTION_FEATURE_SWITCHES[feature][0]) is False:
+            return False
+        if not self.global_settings_known:
+            return True
+        return self.global_feature_enabled(feature)
+
 
 class YunkanCoordinator(DataUpdateCoordinator[YunkanData]):
     """Coordinate polling and event fan-out for a Yunkan server."""

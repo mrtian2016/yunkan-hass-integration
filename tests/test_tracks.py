@@ -30,6 +30,11 @@ def test_fall_flag_counts_fall() -> None:
 
 
 def test_empty_and_unmapped() -> None:
-    """No tracks means empty; unmapped labels are ignored."""
+    """No tracks means empty; unmapped and momentary labels are ignored.
+
+    "gesture" maps to an event category but is momentary — it must never latch
+    occupancy from live tracks (MOMENTARY_CATEGORIES guard).
+    """
     assert _count_categories([]) == {}
     assert _count_categories([{"label": "gesture"}]) == {}
+    assert _count_categories([{"label": "plate"}]) == {}

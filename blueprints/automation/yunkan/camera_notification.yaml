@@ -2,8 +2,8 @@ blueprint:
   name: Yunkan camera notification
   description: >
     Send a mobile notification with a snapshot when a Yunkan camera detects a
-    person, vehicle, animal, package, face, fall or baby cry. Uses the Yunkan
-    device triggers and the camera's snapshot.
+    person, vehicle, animal, package, face, fall, baby cry or gesture. Uses the
+    Yunkan device triggers and the camera's snapshot.
   domain: automation
   source_url: https://github.com/yunkan/yunkan-hass-integration/blob/main/blueprints/automation/yunkan/camera_notification.yaml
   input:
@@ -32,6 +32,7 @@ blueprint:
         - face_detected
         - fall_detected
         - cry_detected
+        - gesture_detected
       selector:
         select:
           multiple: true
@@ -50,6 +51,8 @@ blueprint:
               value: fall_detected
             - label: Baby cry
               value: cry_detected
+            - label: Gesture
+              value: gesture_detected
     cooldown:
       name: Cooldown (seconds)
       description: Minimum time between notifications for this camera.
@@ -100,6 +103,11 @@ trigger:
     device_id: !input camera_device
     type: cry_detected
     id: cry_detected
+  - platform: device
+    domain: yunkan
+    device_id: !input camera_device
+    type: gesture_detected
+    id: gesture_detected
 
 variables:
   detections: !input detections

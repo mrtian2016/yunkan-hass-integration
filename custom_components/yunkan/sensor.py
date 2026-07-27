@@ -2,12 +2,17 @@
 
 Internal metrics (fps, cpu, gpu) stay in Web Admin. Per camera this exposes a
 "last event" timestamp, a live object-count per category, and the last
-recognised face and licence plate — all fed by the event / live-tracks streams.
+recognised face, licence plate and gesture — all fed by the event / live-tracks
+streams.
+
+The count and recognition sensors exist only while the detection feature behind
+them is enabled (see feature_gate); "last event" is always present.
 """
 
 from __future__ import annotations
 
 from datetime import datetime
+from functools import partial
 import logging
 from typing import Any
 
@@ -23,10 +28,16 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from . import YunkanConfigEntry
-from .const import CATEGORY_META, EVENT_CATEGORY_MAP, OBJECT_COUNT_CATEGORIES
+from .const import (
+    CATEGORY_FEATURE,
+    CATEGORY_META,
+    EVENT_CATEGORY_MAP,
+    OBJECT_COUNT_CATEGORIES,
+)
 from .coordinator import YunkanCoordinator, signal_event, signal_tracks
 from .entity import YunkanCameraEntity
 from .event_utils import event_attributes, parse_extra
+from .feature_gate import FeatureEntity, async_setup_feature_entities
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,15 +50,39 @@ async def async_setup_entry(
     """Set up Yunkan sensors from a config entry."""
     coordinator = entry.runtime_data
     entities: list[SensorEntity] = []
+    specs: list[FeatureEntity] = []
+    # Recognition sensors, keyed by the feature that produces the value.
+    recognition = (
+        ("face", YunkanRecognizedFaceSensor),
+        ("plate", YunkanRecognizedPlateSensor),
+        ("gesture", YunkanRecognizedGestureSensor),
+    )
     for camera_id in coordinator.data.cameras:
         entities.append(YunkanLastEventSensor(coordinator, camera_id))
-        entities.append(YunkanRecognizedFaceSensor(coordinator, camera_id))
-        entities.append(YunkanRecognizedPlateSensor(coordinator, camera_id))
-        entities.extend(
-            YunkanObjectCountSensor(coordinator, camera_id, category)
+        specs.extend(
+            FeatureEntity(
+                camera_id=camera_id,
+                feature=feature,
+                key=f"recognized_{feature}",
+                factory=partial(cls, coordinator, camera_id),
+            )
+            for feature, cls in recognition
+        )
+        specs.extend(
+            FeatureEntity(
+                camera_id=camera_id,
+                feature=CATEGORY_FEATURE[category],
+                key=f"{category}_count",
+                factory=partial(
+                    YunkanObjectCountSensor, coordinator, camera_id, category
+                ),
+            )
             for category in OBJECT_COUNT_CATEGORIES
         )
     async_add_entities(entities)
+    async_setup_feature_entities(
+        hass, entry, coordinator, async_add_entities, "sensor", specs
+    )
 
 
 def _parse_event_time(value: Any) -> datetime | None:
@@ -205,3 +240,16 @@ class YunkanRecognizedPlateSensor(_YunkanRecognitionSensor):
         """Initialise the recognised-plate sensor."""
         super().__init__(coordinator, camera_id)
         self._attr_unique_id = f"{self._entry_id}_{camera_id}_recognized_plate"
+
+
+class YunkanRecognizedGestureSensor(_YunkanRecognitionSensor):
+    """The most recently recognised gesture label on a camera."""
+
+    _attr_translation_key = "recognized_gesture"
+    _attr_icon = "mdi:hand-wave"
+    _extra_key = "gesture"
+
+    def __init__(self, coordinator: YunkanCoordinator, camera_id: str) -> None:
+        """Initialise the recognised-gesture sensor."""
+        super().__init__(coordinator, camera_id)
+        self._attr_unique_id = f"{self._entry_id}_{camera_id}_recognized_gesture"

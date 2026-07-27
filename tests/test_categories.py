@@ -26,11 +26,12 @@ def test_known_labels_map_to_expected_categories() -> None:
     assert EVENT_CATEGORY_MAP["truck"] == "vehicle"
     assert EVENT_CATEGORY_MAP["dog"] == "animal"
     assert EVENT_CATEGORY_MAP["cry"] == "cry"
+    assert EVENT_CATEGORY_MAP["gesture"] == "gesture"
 
 
 def test_unmapped_labels_are_absent() -> None:
     """Fine-grained labels that must not become sensors are not in the map."""
-    for label in ("gesture", "plate", "motion", "zone_enter", "weather"):
+    for label in ("plate", "motion", "zone_enter", "weather"):
         assert label not in EVENT_CATEGORY_MAP
 
 

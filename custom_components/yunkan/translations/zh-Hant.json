@@ -61,6 +61,9 @@
       "cry": {
         "name": "嬰兒哭聲"
       },
+      "gesture": {
+        "name": "手勢"
+      },
       "motion": {
         "name": "移動"
       }
@@ -86,6 +89,9 @@
       },
       "recognized_plate": {
         "name": "辨識車牌"
+      },
+      "recognized_gesture": {
+        "name": "辨識手勢"
       }
     },
     "switch": {
@@ -168,6 +174,9 @@
       },
       "latest_cry": {
         "name": "最新哭聲"
+      },
+      "latest_gesture": {
+        "name": "最新手勢"
       }
     },
     "camera": {
@@ -302,7 +311,8 @@
       "package_detected": "偵測到包裹",
       "face_detected": "偵測到人臉",
       "fall_detected": "偵測到跌倒",
-      "cry_detected": "偵測到嬰兒哭聲"
+      "cry_detected": "偵測到嬰兒哭聲",
+      "gesture_detected": "偵測到手勢"
     },
     "action_type": {
       "ptz_move": "轉動雲台",

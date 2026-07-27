@@ -61,6 +61,9 @@
       "cry": {
         "name": "Baby cry"
       },
+      "gesture": {
+        "name": "Gesture"
+      },
       "motion": {
         "name": "Motion"
       }
@@ -86,6 +89,9 @@
       },
       "recognized_plate": {
         "name": "Recognized plate"
+      },
+      "recognized_gesture": {
+        "name": "Recognized gesture"
       }
     },
     "switch": {
@@ -168,6 +174,9 @@
       },
       "latest_cry": {
         "name": "Latest cry"
+      },
+      "latest_gesture": {
+        "name": "Latest gesture"
       }
     },
     "camera": {
@@ -296,7 +305,8 @@
       "package_detected": "Package detected",
       "face_detected": "Face detected",
       "fall_detected": "Fall detected",
-      "cry_detected": "Baby cry detected"
+      "cry_detected": "Baby cry detected",
+      "gesture_detected": "Gesture detected"
     },
     "action_type": {
       "ptz_move": "Move a PTZ camera",

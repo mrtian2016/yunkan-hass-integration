@@ -61,6 +61,9 @@
       "cry": {
         "name": "Pleurs de bébé"
       },
+      "gesture": {
+        "name": "Geste"
+      },
       "motion": {
         "name": "Mouvement"
       }
@@ -86,6 +89,9 @@
       },
       "recognized_plate": {
         "name": "Plaque reconnue"
+      },
+      "recognized_gesture": {
+        "name": "Geste reconnu"
       }
     },
     "switch": {
@@ -168,6 +174,9 @@
       },
       "latest_cry": {
         "name": "Derniers pleurs"
+      },
+      "latest_gesture": {
+        "name": "Dernier geste"
       }
     },
     "update": {
@@ -302,7 +311,8 @@
       "package_detected": "Colis détecté",
       "face_detected": "Visage détecté",
       "fall_detected": "Chute détectée",
-      "cry_detected": "Pleurs de bébé détectés"
+      "cry_detected": "Pleurs de bébé détectés",
+      "gesture_detected": "Geste détecté"
     },
     "action_type": {
       "ptz_move": "Déplacer une caméra PTZ",

@@ -61,6 +61,9 @@
       "cry": {
         "name": "赤ちゃんの泣き声"
       },
+      "gesture": {
+        "name": "ジェスチャー"
+      },
       "motion": {
         "name": "動き"
       }
@@ -86,6 +89,9 @@
       },
       "recognized_plate": {
         "name": "認識したナンバー"
+      },
+      "recognized_gesture": {
+        "name": "認識したジェスチャー"
       }
     },
     "switch": {
@@ -168,6 +174,9 @@
       },
       "latest_cry": {
         "name": "最新の泣き声"
+      },
+      "latest_gesture": {
+        "name": "最新のジェスチャー"
       }
     },
     "update": {
@@ -302,7 +311,8 @@
       "package_detected": "荷物を検出",
       "face_detected": "顔を検出",
       "fall_detected": "転倒を検出",
-      "cry_detected": "赤ちゃんの泣き声を検出"
+      "cry_detected": "赤ちゃんの泣き声を検出",
+      "gesture_detected": "ジェスチャーを検出"
     },
     "action_type": {
       "ptz_move": "PTZ カメラを動かす",
