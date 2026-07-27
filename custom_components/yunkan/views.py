@@ -110,10 +110,14 @@ class YunkanEventSnapshotView(HomeAssistantView):
         rel = "/api/events/snapshot?" + urlencode({"path": snapshot_path})
         event_id = request.query.get("event_id")
         width = request.query.get("w")
+        eid = int(event_id) if event_id and event_id.isdigit() else None
+        # crop=1 crops the snapshot around the detected object (needs event_id).
+        crop = request.query.get("crop") == "1"
         data = await coordinator.client.async_event_snapshot(
             rel,
             width=int(width) if width and width.isdigit() else None,
-            annotate_event_id=int(event_id) if event_id and event_id.isdigit() else None,
+            annotate_event_id=eid,
+            crop_event_id=eid if crop else None,
         )
         return await _proxy_bytes(data)
 

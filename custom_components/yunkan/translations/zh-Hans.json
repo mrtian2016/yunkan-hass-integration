@@ -311,5 +311,21 @@
       "snapshot": "保存快照",
       "export": "导出录像"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "事件快照渲染",
+        "description": "事件图片（最新事件实体与快照预览）的渲染方式。修改立即生效。",
+        "data": {
+          "snapshot_bounding_box": "在事件图片上绘制检测框",
+          "snapshot_crop": "将事件图片裁剪到检测目标周边"
+        },
+        "data_description": {
+          "snapshot_bounding_box": "由服务端在快照上绘制检测框，与事件中心显示一致。",
+          "snapshot_crop": "放大到检测目标并保留少量周边画面，适合通知预览一眼看清。"
+        }
+      }
+    }
   }
 }

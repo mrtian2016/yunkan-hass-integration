@@ -311,5 +311,21 @@
       "title": "Yunkan Pro required",
       "description": "This action needs a Yunkan Pro license, but the server is on the free tier (status: {status}). AI detection and voice broadcast remain unavailable until the server is upgraded."
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Event snapshot rendering",
+        "description": "How event images (latest-event entities and snapshot previews) are rendered. Changes apply immediately.",
+        "data": {
+          "snapshot_bounding_box": "Draw detection boxes on event images",
+          "snapshot_crop": "Crop event images around the detected object"
+        },
+        "data_description": {
+          "snapshot_bounding_box": "Boxes are drawn on the snapshot by the server, like in the event center.",
+          "snapshot_crop": "Zooms in on the detected object with some context around it — handy for notification previews."
+        }
+      }
+    }
   }
 }

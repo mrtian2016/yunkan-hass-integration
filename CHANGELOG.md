@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.4.0
+
+Event snapshot rendering options (requests from the field — thanks Benjamin!).
+
+- **Options flow** (Settings → Integrations → Yunkan → Configure): two new
+  toggles for how event images are rendered, applied to all latest-event /
+  per-category image entities and the snapshot proxy view.
+  - **Draw detection boxes** (default on) — drawn server-side, same rendering
+    as the event center.
+  - **Crop around the detected object** (default off) — square crop centred on
+    the detection with context margin, ideal for notification previews.
+    Mirrors Frigate's `bounding_box` / `crop` snapshot options.
+- The snapshot proxy view (`/api/yunkan/{entry_id}/event_snapshot`) accepts
+  `crop=1` alongside the existing `event_id` / `w` parameters.
+
+Note: bounding boxes on image entities require Yunkan server >= 0.9.32 — older
+servers returned the plain thumbnail when a width cap was requested together
+with box drawing (server-side ordering bug, fixed in 0.9.32). Crop also needs
+>= 0.9.32; on older servers the parameter is ignored and the full frame is
+served, nothing breaks.
+
 ## 0.3.0
 
 Full parity pass against the Frigate integration.

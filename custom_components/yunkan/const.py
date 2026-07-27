@@ -17,6 +17,15 @@ DATA_CLIENT: Final = "client"
 DATA_COORDINATOR: Final = "coordinator"
 DATA_SSE: Final = "sse"
 
+# Options (entry.options) — event snapshot rendering for image entities.
+# Server-side processing on the backend snapshot endpoint: bounding boxes are
+# drawn (annotate=1) and/or the image is cropped around the detected object
+# (crop=1). Mirrors Frigate's snapshot bounding_box / crop options.
+OPT_SNAPSHOT_BBOX: Final = "snapshot_bounding_box"
+OPT_SNAPSHOT_CROP: Final = "snapshot_crop"
+DEFAULT_SNAPSHOT_BBOX: Final = True
+DEFAULT_SNAPSHOT_CROP: Final = False
+
 # Defaults
 DEFAULT_BASE_URL: Final = "http://homeassistant.local:23406"
 # Verify TLS by default; users with a self-signed LAN certificate can opt out.

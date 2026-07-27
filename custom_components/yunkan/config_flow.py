@@ -9,7 +9,13 @@ from typing import Any
 import voluptuous as vol
 from yarl import URL
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
+from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import (
@@ -24,8 +30,12 @@ from .const import (
     CONF_USERNAME,
     CONF_VERIFY_SSL,
     DEFAULT_BASE_URL,
+    DEFAULT_SNAPSHOT_BBOX,
+    DEFAULT_SNAPSHOT_CROP,
     DEFAULT_VERIFY_SSL,
     DOMAIN,
+    OPT_SNAPSHOT_BBOX,
+    OPT_SNAPSHOT_CROP,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -47,6 +57,12 @@ class YunkanConfigFlow(ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         """Initialise transient reauth state."""
         self._reauth_data: dict[str, Any] = {}
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> "YunkanOptionsFlow":
+        """Return the options flow (event snapshot rendering)."""
+        return YunkanOptionsFlow()
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -152,3 +168,34 @@ class YunkanConfigFlow(ConfigFlow, domain=DOMAIN):
             _LOGGER.exception("Unexpected error validating Yunkan credentials")
             return "unknown"
         return None
+
+
+class YunkanOptionsFlow(OptionsFlow):
+    """Options: how event snapshot images are rendered (boxes / crop).
+
+    Both options map straight onto the backend snapshot endpoint parameters
+    (``annotate`` / ``crop``); the integration itself does no image work.
+    Saving reloads the entry (see ``_async_update_listener``), so image
+    entities pick the change up immediately.
+    """
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Single-step form with the two snapshot toggles."""
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+        options = self.config_entry.options
+        schema = vol.Schema(
+            {
+                vol.Optional(
+                    OPT_SNAPSHOT_BBOX,
+                    default=options.get(OPT_SNAPSHOT_BBOX, DEFAULT_SNAPSHOT_BBOX),
+                ): bool,
+                vol.Optional(
+                    OPT_SNAPSHOT_CROP,
+                    default=options.get(OPT_SNAPSHOT_CROP, DEFAULT_SNAPSHOT_CROP),
+                ): bool,
+            }
+        )
+        return self.async_show_form(step_id="init", data_schema=schema)

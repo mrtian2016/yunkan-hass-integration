@@ -18,7 +18,14 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from . import YunkanConfigEntry
-from .const import EVENT_CATEGORIES, EVENT_CATEGORY_MAP
+from .const import (
+    DEFAULT_SNAPSHOT_BBOX,
+    DEFAULT_SNAPSHOT_CROP,
+    EVENT_CATEGORIES,
+    EVENT_CATEGORY_MAP,
+    OPT_SNAPSHOT_BBOX,
+    OPT_SNAPSHOT_CROP,
+)
 from .coordinator import YunkanCoordinator, signal_event
 from .entity import YunkanCameraEntity
 
@@ -106,11 +113,20 @@ class YunkanLatestEventImage(YunkanCameraEntity, ImageEntity):
             self._attr_image_last_updated = dt_util.utcnow()
 
     async def async_image(self) -> bytes | None:
-        """Return the latest event snapshot JPEG with detection boxes."""
+        """Return the latest event snapshot JPEG, rendered per entry options.
+
+        Bounding boxes (default on) and object crop (default off) are applied
+        server-side; both need the event id. Options changes reload the entry,
+        so reading them per fetch is always current.
+        """
         if not self._snapshot_url:
             return None
+        options = self.coordinator.config_entry.options
+        draw_box = options.get(OPT_SNAPSHOT_BBOX, DEFAULT_SNAPSHOT_BBOX)
+        crop = options.get(OPT_SNAPSHOT_CROP, DEFAULT_SNAPSHOT_CROP)
         return await self.coordinator.client.async_event_snapshot(
             self._snapshot_url,
             width=_THUMBNAIL_WIDTH,
-            annotate_event_id=self._event_id,
+            annotate_event_id=self._event_id if draw_box else None,
+            crop_event_id=self._event_id if crop else None,
         )

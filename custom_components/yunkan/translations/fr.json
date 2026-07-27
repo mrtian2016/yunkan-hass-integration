@@ -311,5 +311,21 @@
       "snapshot": "Enregistrer un instantané",
       "export": "Exporter un enregistrement"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Rendu des instantanés d'événement",
+        "description": "Mode de rendu des images d'événement (entités « dernier événement » et aperçus). Les modifications s'appliquent immédiatement.",
+        "data": {
+          "snapshot_bounding_box": "Dessiner les cadres de détection sur les images d'événement",
+          "snapshot_crop": "Recadrer les images d'événement autour de l'objet détecté"
+        },
+        "data_description": {
+          "snapshot_bounding_box": "Les cadres sont dessinés sur l'instantané par le serveur, comme dans le centre d'événements.",
+          "snapshot_crop": "Zoome sur l'objet détecté avec un peu de contexte autour — pratique pour les aperçus de notification."
+        }
+      }
+    }
   }
 }

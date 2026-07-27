@@ -400,12 +400,16 @@ class YunkanApiClient:
         *,
         width: int | None = None,
         annotate_event_id: int | None = None,
+        crop_event_id: int | None = None,
         _retry: bool = True,
     ) -> bytes | None:
         """Fetch an event snapshot JPEG via the Bearer-authenticated snapshot endpoint.
 
         ``snapshot_url`` is the relative URL carried on the event
-        (``/api/events/snapshot?path=...``). Extra query params are merged.
+        (``/api/events/snapshot?path=...``). Extra query params are merged:
+        ``annotate_event_id`` draws detection boxes server-side and
+        ``crop_event_id`` crops around the detected object (both need the
+        event id; pass the same id to combine them).
         """
         await self._ensure_token()
         url = URL(self.abs_url(snapshot_url))
@@ -415,6 +419,9 @@ class YunkanApiClient:
         if annotate_event_id is not None:
             query["annotate"] = 1
             query["event_id"] = annotate_event_id
+        if crop_event_id is not None:
+            query["crop"] = 1
+            query["event_id"] = crop_event_id
         if query:
             url = url.update_query(query)
         headers = {"Authorization": f"Bearer {self._token}"}
@@ -430,6 +437,7 @@ class YunkanApiClient:
                         snapshot_url,
                         width=width,
                         annotate_event_id=annotate_event_id,
+                        crop_event_id=crop_event_id,
                         _retry=False,
                     )
                 return None

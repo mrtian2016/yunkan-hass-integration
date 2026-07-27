@@ -311,5 +311,21 @@
       "snapshot": "儲存快照",
       "export": "匯出錄影"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "事件快照渲染",
+        "description": "事件圖片（最新事件實體與快照預覽）的渲染方式。修改立即生效。",
+        "data": {
+          "snapshot_bounding_box": "在事件圖片上繪製偵測框",
+          "snapshot_crop": "將事件圖片裁剪到偵測目標周邊"
+        },
+        "data_description": {
+          "snapshot_bounding_box": "由伺服器在快照上繪製偵測框，與事件中心顯示一致。",
+          "snapshot_crop": "放大到偵測目標並保留少量周邊畫面，適合通知預覽一眼看清。"
+        }
+      }
+    }
   }
 }
