@@ -19,6 +19,14 @@ and full gesture coverage.
   automation referenced one (say `image.<camera>_latest_face` on a server
   without face recognition), it will report a missing entity — turn that
   detection feature on and the entity returns, unchanged, within 30 seconds.
+- **Per-camera detection switches no longer show a guessed state.** Resolving
+  them needs the server-wide settings, which only an admin account can read;
+  with a viewer account they used to fall back to the shipped defaults and show
+  a confident "off" for features that were in fact running. They now report
+  unavailable when that state is unknown — the same thing the server-wide
+  switches already did. Turning one on no longer refuses based on that guess
+  either: with the settings unreadable the request goes to the server and the
+  server decides.
 - **Gesture events**, end to end: a per-camera **Gesture** binary sensor
   (pulses on each gesture event, carrying the gesture label and the recognised
   person name as attributes), a **Latest gesture** snapshot image entity, and a

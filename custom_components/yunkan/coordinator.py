@@ -98,11 +98,11 @@ class YunkanData:
 
         Resolves the backend kill-switch the same way the feature switch does —
         a per-camera override of ``False`` disables, anything else defers to the
-        server-wide setting — with one deliberate difference: when the
-        server-wide settings could not be read (a non-admin account), assume
-        **enabled** rather than falling back to the shipped defaults. Guessing
-        wrong here hides entities that may well be live, which is far worse than
-        showing one that stays quiet.
+        server-wide setting — except when the server-wide settings could not be
+        read (a non-admin account): then assume **enabled**, because hiding
+        entities that may well be live is far worse than showing one that stays
+        quiet. The switch handles that same uncertainty by reporting unavailable
+        rather than a guessed state, so the two never contradict each other.
         """
         camera = self.cameras.get(camera_id)
         if camera is None:

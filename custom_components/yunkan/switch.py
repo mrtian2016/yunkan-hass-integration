@@ -194,8 +194,15 @@ class YunkanFeatureSwitch(YunkanCameraEntity, SwitchEntity):
     kill-switch means an override can only *disable* a feature for one camera; it
     cannot enable a feature that is off server-wide (that ``true`` is dropped). So
     the resolved state is ``global AND override``, and turning a switch on while
-    the feature is disabled server-wide is rejected with a clear error rather
-    than silently reverting.
+    the feature is known to be disabled server-wide is rejected with a clear
+    error rather than silently reverting.
+
+    Resolving the state needs the server-wide settings, which are admin-only. A
+    non-admin account cannot read them, and guessing from the shipped defaults
+    would show a confident "off" for a feature that is very likely running —
+    next to the entities the feature gate (correctly) keeps visible. So when the
+    settings are unknown the switch reports unavailable instead: an honest "no
+    idea" rather than a wrong answer, matching YunkanGlobalFeatureSwitch.
     """
 
     _attr_device_class = SwitchDeviceClass.SWITCH
@@ -224,12 +231,17 @@ class YunkanFeatureSwitch(YunkanCameraEntity, SwitchEntity):
         return overrides.get(self._override_key)
 
     @property
+    def available(self) -> bool:
+        """Available only when the server-wide state behind the override is known."""
+        return super().available and self.coordinator.data.global_settings_known
+
+    @property
     def is_on(self) -> bool:
         """Return the resolved state: server-wide setting AND per-camera override.
 
         A per-camera override of ``False`` disables the feature; any other value
         (True or unset) defers to the server-wide setting, matching the backend
-        kill-switch.
+        kill-switch. Only meaningful while ``available`` — see the class docstring.
         """
         if self._override() is False:
             return False
@@ -237,7 +249,10 @@ class YunkanFeatureSwitch(YunkanCameraEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Enable the feature for this camera (requires it enabled server-wide)."""
-        if not self._global_on():
+        # Only refuse when the server-wide state is actually known to be off.
+        # With the settings unreadable, let the backend answer rather than
+        # rejecting on a guessed shipped default.
+        if self.coordinator.data.global_settings_known and not self._global_on():
             raise HomeAssistantError(
                 f"'{self._feature}' detection is disabled server-wide; enable it "
                 "on the Yunkan server device first, then per camera."
@@ -256,7 +271,10 @@ class YunkanFeatureSwitch(YunkanCameraEntity, SwitchEntity):
         overwrite each other's change.
         """
         async with self.coordinator.overrides_lock(self._camera_id):
-            if self.is_on == desired:
+            # Skip the write only when the current state is actually known:
+            # is_on rests on the server-wide setting, so with that unreadable it
+            # would short-circuit "turn off" into a silent no-op.
+            if self.coordinator.data.global_settings_known and self.is_on == desired:
                 return
             overrides = copy.deepcopy(self._camera.get("detection_overrides") or {})
             overrides[self._override_key] = desired

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from custom_components.yunkan.const import (
     CATEGORY_FEATURE,
@@ -100,9 +101,9 @@ def test_camera_override_cannot_enable_past_the_kill_switch() -> None:
 def test_unknown_global_settings_assume_enabled() -> None:
     """A non-admin account cannot read settings; assume enabled, don't guess off.
 
-    Hiding entities that are in fact live is far worse than showing a quiet one,
-    so this deliberately differs from the feature switch (which falls back to the
-    shipped defaults — face ships disabled).
+    Hiding entities that are in fact live is far worse than showing a quiet one.
+    The feature switch answers the same uncertainty by going unavailable (see
+    YunkanFeatureSwitch.available), so the visible state never contradicts this.
     """
     data = _data()
     assert data.global_settings_known is False
@@ -110,6 +111,46 @@ def test_unknown_global_settings_assume_enabled() -> None:
     # An explicit per-camera "off" is still authoritative — it needs no settings.
     off = _data(overrides={"face.enabled": False})
     assert off.should_expose_feature("cam_1", "face") is False
+
+
+def _feature_switch(global_settings: dict | None, overrides: dict | None = None):
+    """Build a per-camera feature switch over a stubbed coordinator."""
+    from custom_components.yunkan.switch import YunkanFeatureSwitch
+
+    coordinator = MagicMock()
+    coordinator.data = _data(overrides, global_settings)
+    coordinator.last_update_success = True
+    coordinator.entry.entry_id = "entry1"
+    return YunkanFeatureSwitch(coordinator, "cam_1", "face")
+
+
+def test_switch_unavailable_when_settings_unreadable() -> None:
+    """Settings unreadable (non-admin) → unavailable, never a guessed "off".
+
+    The gate keeps the face entities visible in this case; a switch confidently
+    reporting "off" right next to them would be a visible contradiction, and the
+    "off" would be wrong whenever the feature is in fact running.
+    """
+    switch = _feature_switch(None)
+    assert switch.coordinator.data.global_settings_known is False
+    assert switch.available is False
+
+
+def test_switch_available_and_resolved_when_settings_known() -> None:
+    """With settings readable the switch is available and resolves normally."""
+    on = _feature_switch({"detection.face.enabled": True})
+    assert on.available is True
+    assert on.is_on is True
+
+    off = _feature_switch({"detection.face.enabled": False})
+    assert off.available is True
+    assert off.is_on is False
+
+    overridden = _feature_switch(
+        {"detection.face.enabled": True}, {"face.enabled": False}
+    )
+    assert overridden.available is True
+    assert overridden.is_on is False
 
 
 def test_unknown_camera_is_not_exposed() -> None:
