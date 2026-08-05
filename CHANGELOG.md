@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.5.0
+
+Direct RTSP streaming for camera entities.
+
+- **Cameras now stream over RTSP wherever it is reachable.** Live view used to
+  go through the server's HLS playlist, which generic consumers — go2rtc behind
+  the WebRTC Camera card, and its embedded player — play without any live-edge
+  discipline: they start at the head of the playlist and read segments as fast
+  as they download, race through the server's DVR window, then starve at the
+  live edge in GOP-sized cycles. Measured against a live server, that meant
+  57.8 fps delivered for a 25 fps stream while catching up. The camera entity
+  now builds a direct RTSP URL from the same signed live grant it already used,
+  which gives sub-second latency with no segmentation and no dependence on the
+  camera's keyframe interval. There is nothing to configure.
+- **Automatic fallback when RTSP cannot be reached.** The media engine serves
+  RTSP on its own port, which an HTTP-only reverse proxy cannot carry. A cheap
+  TCP-connect probe — cached for 10 minutes per host and port — decides at
+  runtime: reachable means RTSP, unreachable means the signed HLS URL exactly
+  as before. Yunkan 0.9.36 reports its RTSP port explicitly; older servers do
+  not, so the default port is assumed and they keep working either way.
+- **New `stream_transport` camera attribute** showing which path each camera
+  actually resolved to (`rtsp` or `hls`). It is resolved when the entity is
+  added, so you can see it without opening a stream, and refreshed every time
+  a stream starts. The signed URL itself is deliberately kept out of the
+  attributes: tokens are short-lived and attributes end up in recorder history.
+
 ## 0.4.0
 
 Event snapshot rendering options (requests from the field — thanks Benjamin!)
