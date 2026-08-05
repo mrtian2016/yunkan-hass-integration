@@ -5,9 +5,11 @@ overview camera when the server has it enabled:
 * snapshots come from the backend's JPEG snapshot endpoint;
 * live view uses HA's native WebRTC path (2024.11+) by relaying the browser's
   SDP offer to the server's WHEP endpoint and returning the answer;
-* ``stream_source`` returns an HLS URL used by the stream component for
-  recording, casting and still previews (the frontend live view itself is
-  WebRTC, so it does not silently fall back to HLS if WebRTC can't connect).
+* ``stream_source`` prefers a direct RTSP URL (sub-second latency, no HLS
+  segmentation/GOP dependency — what go2rtc / the WebRTC Camera card / the
+  stream component consume best), probing the RTSP port once and falling back
+  to the signed HLS URL when the port is unreachable (e.g. behind an HTTP-only
+  reverse proxy). The frontend live view itself is WebRTC and unaffected.
 
 All playback URLs are signed with a short-lived live-grant token minted per
 session; nothing but the nginx entry (base URL) is ever exposed.
@@ -15,9 +17,11 @@ session; nothing but the nginx entry (base URL) is ever exposed.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from typing import Any
+from urllib.parse import urlsplit
 
 from homeassistant.components.camera import (
     Camera,
@@ -41,10 +45,46 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import YunkanConfigEntry
 from .api import YunkanApiError, YunkanConnectionError
-from .const import BIRDSEYE_CAMERA_ID
+from .const import BIRDSEYE_CAMERA_ID, RTSP_PORT_DEFAULT
 from .coordinator import YunkanCoordinator
+
+# RTSP reachability probe cache: {(host, port): (reachable, monotonic_ts)}.
+# One TCP connect per host/port per _RTSP_PROBE_TTL — all cameras of an entry
+# share the same server, so this is at most one probe every few minutes.
+_RTSP_PROBE_TTL = 600.0
+_rtsp_probe_cache: dict[tuple[str, int], tuple[bool, float]] = {}
+
+
+async def _rtsp_port_reachable(host: str, port: int) -> bool:
+    """Cheap cached TCP-connect probe of the server's RTSP port.
+
+    The RTSP port is not proxied by nginx: on LAN/host-network deployments it
+    is reachable and RTSP is strictly better for stream consumers; behind an
+    HTTP-only reverse proxy it is not, and we must stay on HLS. A 2s connect
+    probe cached for 10 minutes decides — no user-facing knob.
+    """
+    if not host:
+        return False
+    key = (host, port)
+    cached = _rtsp_probe_cache.get(key)
+    now = time.monotonic()
+    if cached is not None and now - cached[1] < _RTSP_PROBE_TTL:
+        return cached[0]
+    ok = False
+    try:
+        _, writer = await asyncio.wait_for(asyncio.open_connection(host, port), timeout=2.0)
+        writer.close()
+        try:
+            await writer.wait_closed()
+        except Exception:  # noqa: BLE001 - close errors are irrelevant to the probe
+            pass
+        ok = True
+    except Exception:  # noqa: BLE001 - unreachable/timeout/refused all mean "use HLS"
+        ok = False
+    _rtsp_probe_cache[key] = (ok, now)
+    return ok
 from .entity import YunkanCameraEntity, server_device_info
-from .urls import build_hls_url, build_whep_url, pick_stream
+from .urls import build_hls_url, build_rtsp_url, build_whep_url, pick_live, pick_stream
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -118,16 +158,28 @@ class _YunkanStreamCamera(Camera):
         return grant
 
     async def stream_source(self) -> str | None:
-        """Return an HLS URL for the HA stream component (fallback path)."""
+        """Return the best stream URL for HA's stream component / go2rtc.
+
+        RTSP first (direct engine port, same signed token, sub-second latency,
+        no HLS segmentation/GOP dependency), HLS fallback when the RTSP port is
+        unreachable (HTTP-only reverse proxy deployments).
+        """
         try:
             grant = await self._async_grant()
         except YunkanApiError as err:
             _LOGGER.debug("live-grant for %s failed: %s", self._stream_label, err)
             return None
+        base_url = self.coordinator.client.base_url
+        live_app, live_stream, live_token = pick_live(grant)
+        if live_stream and live_token:
+            host = urlsplit(base_url).hostname or ""
+            rtsp_port = int(grant.get("rtsp_port") or 0) or None
+            if await _rtsp_port_reachable(host, rtsp_port or RTSP_PORT_DEFAULT):
+                return build_rtsp_url(base_url, live_app, live_stream, live_token, rtsp_port)
         app, stream, token = pick_stream(grant, "aac_variant")
         if not stream or not token:
             return None
-        return build_hls_url(self.coordinator.client.base_url, app, stream, token)
+        return build_hls_url(base_url, app, stream, token)
 
     def _async_get_webrtc_client_configuration(self) -> WebRTCClientConfiguration:
         """Return the WebRTC client config (sync hook), adding cached ICE servers."""

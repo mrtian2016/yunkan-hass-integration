@@ -37,3 +37,24 @@ def test_build_whep_url_has_three_query_params() -> None:
     """WHEP URL carries app, stream and token as query params."""
     url = build_whep_url("http://host:23406", "live", "cam01_opus", "T")
     assert url == "http://host:23406/index/api/whep?app=live&stream=cam01_opus&token=T"
+
+
+def test_pick_live_ignores_variants() -> None:
+    from custom_components.yunkan.urls import pick_live
+
+    grant = {
+        "token": "tok-live",
+        "live": {"app": "live", "stream": "cam1"},
+        "aac_variant": {"app": "live", "stream": "cam1_aac", "token": "tok-aac"},
+    }
+    assert pick_live(grant) == ("live", "cam1", "tok-live")
+
+
+def test_build_rtsp_url_shape_and_port() -> None:
+    from custom_components.yunkan.urls import build_rtsp_url
+
+    url = build_rtsp_url("http://192.168.1.10:23406", "live", "cam1", "tok", 23880)
+    assert url == "rtsp://192.168.1.10:23880/live/cam1?token=tok"
+    # 旧后端无 rtsp_port 字段 → 默认 23880
+    url = build_rtsp_url("https://nvr.example.com", "live", "cam1", "tok", None)
+    assert url == "rtsp://nvr.example.com:23880/live/cam1?token=tok"

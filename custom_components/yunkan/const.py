@@ -162,6 +162,11 @@ PRO_GATED_ENDPOINTS: Final = ("detection", "talkback", "tts")
 # WHEP: POST the SDP offer here with Content-Type: application/sdp, get the answer.
 WHEP_PATH: Final = "/index/api/whep"
 HLS_PATH: Final = "/{app}/{stream}/hls.m3u8"
+# Direct RTSP restream: served on the media engine's RTSP port, authenticated
+# with the same live-grant token on DESCRIBE. Not proxied by nginx — runtime
+# reachability probe decides between RTSP and the HLS fallback.
+RTSP_PATH: Final = "/{app}/{stream}"
+RTSP_PORT_DEFAULT: Final = 23880
 
 # live-grant token TTL is 1800s; refresh at ~80% of the TTL to stay gapless.
 LIVE_GRANT_REFRESH_RATIO: Final = 0.8
