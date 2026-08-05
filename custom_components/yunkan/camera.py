@@ -134,6 +134,10 @@ class _YunkanStreamCamera(Camera):
         Camera.__init__(self)
         self._grant: dict[str, Any] | None = None
         self._grant_ts: float = 0.0
+        # Resolved stream transport, surfaced as an entity attribute so users can
+        # SEE which path stream consumers get (rtsp = direct low-latency engine
+        # port; hls = signed HTTP fallback). Never includes the token.
+        self._stream_transport: str | None = None
 
     async def async_added_to_hass(self) -> None:
         """Warm the grant so the first WebRTC config carries the server ICE servers."""
@@ -142,6 +146,20 @@ class _YunkanStreamCamera(Camera):
             await self._async_grant()
         except YunkanApiError:
             pass  # streaming will retry on demand
+        # Pre-resolve the transport attribute so it is visible without anyone
+        # having opened a stream yet (probe result is cached module-wide).
+        try:
+            await self.stream_source()
+        except Exception:  # noqa: BLE001 - attribute warm-up must never break setup
+            pass
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Expose the resolved stream transport (rtsp / hls) for visibility."""
+        base = super().extra_state_attributes or {}
+        if self._stream_transport:
+            return {**base, "stream_transport": self._stream_transport}
+        return base or None
 
     async def _fetch_grant(self) -> dict[str, Any]:
         """Fetch a fresh live grant (per-camera or birdseye)."""
@@ -175,10 +193,12 @@ class _YunkanStreamCamera(Camera):
             host = urlsplit(base_url).hostname or ""
             rtsp_port = int(grant.get("rtsp_port") or 0) or None
             if await _rtsp_port_reachable(host, rtsp_port or RTSP_PORT_DEFAULT):
+                self._stream_transport = "rtsp"
                 return build_rtsp_url(base_url, live_app, live_stream, live_token, rtsp_port)
         app, stream, token = pick_stream(grant, "aac_variant")
         if not stream or not token:
             return None
+        self._stream_transport = "hls"
         return build_hls_url(base_url, app, stream, token)
 
     def _async_get_webrtc_client_configuration(self) -> WebRTCClientConfiguration:
