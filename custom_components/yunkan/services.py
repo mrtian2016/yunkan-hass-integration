@@ -15,8 +15,28 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv, entity_registry as er
-from homeassistant.helpers.service import async_extract_referenced_entity_ids
 from homeassistant.util import dt as dt_util
+
+try:
+    # HA >= 2026.1 exposes target selection via homeassistant.helpers.target, and
+    # 2026.8 dropped the homeassistant.helpers.service re-export entirely.
+    # 2025.8-2025.12 has the module but only the older TargetSelectorData name,
+    # so the ImportError sends those versions down the legacy path below.
+    from homeassistant.helpers.target import (
+        TargetSelection,
+        async_extract_referenced_entity_ids as _async_extract_referenced,
+    )
+
+    def _extract_referenced_entities(hass: HomeAssistant, call: ServiceCall):
+        """Extract entities referenced by a service call (HA >= 2026.1)."""
+        return _async_extract_referenced(hass, TargetSelection(call.data))
+
+except ImportError:  # HA <= 2025.12
+    from homeassistant.helpers.service import async_extract_referenced_entity_ids
+
+    def _extract_referenced_entities(hass: HomeAssistant, call: ServiceCall):
+        """Extract entities referenced by a service call (legacy HA)."""
+        return async_extract_referenced_entity_ids(hass, call)
 
 from .api import YunkanApiError, YunkanProRequiredError
 from .const import DOMAIN, PTZ_DIRECTIONS
@@ -222,7 +242,7 @@ def _resolve_targets(
     hass: HomeAssistant, call: ServiceCall
 ) -> list[tuple[YunkanCoordinator, str]]:
     """Resolve referenced entities to (coordinator, camera_id) pairs."""
-    selected = async_extract_referenced_entity_ids(hass, call)
+    selected = _extract_referenced_entities(hass, call)
     entity_ids = selected.referenced | selected.indirectly_referenced
     registry = er.async_get(hass)
     seen: set[tuple[str, str]] = set()
