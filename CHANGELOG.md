@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.1
+
+Fixes setup failing on Home Assistant 2026.8.
+
+- **The integration loads again on Home Assistant 2026.8.** That release removed
+  a helper the integration used to work out which cameras an action was aimed
+  at, so the integration failed to load at startup and none of its entities
+  appeared. It now uses whichever helper the running Home Assistant provides,
+  so actions still resolve targets picked by entity, by device, by area, by
+  floor or by label. Home Assistant 2024.11 and newer all keep working from the
+  same release — there is nothing to change on your side.
+
 ## 0.5.0
 
 Direct RTSP streaming for camera entities.
