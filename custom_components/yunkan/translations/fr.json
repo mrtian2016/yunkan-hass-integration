@@ -301,6 +301,14 @@
     "pro_required": {
       "title": "Yunkan Pro requis",
       "description": "Cette action nécessite une licence Yunkan Pro, mais le serveur est en version gratuite (statut : {status}). La détection IA et l'annonce vocale restent indisponibles jusqu'à la mise à niveau du serveur."
+    },
+    "embed_not_admin": {
+      "title": "Panneau latéral : interrupteur serveur non activé",
+      "description": "Le panneau latéral est activé, mais l'intégration n'a pas pu activer « Autoriser l'intégration dans Home Assistant » sur le serveur Yunkan — le compte configuré n'a pas les droits administrateur. La connexion dans le panneau bouclera tant que l'interrupteur n'est pas activé manuellement dans la console web (Réglages → direct à distance → avancé) ou que l'intégration n'est pas reconfigurée avec un compte administrateur."
+    },
+    "embed_server_unsupported": {
+      "title": "Panneau latéral : mise à jour du serveur requise",
+      "description": "Le panneau latéral est activé, mais le serveur Yunkan connecté ne possède pas encore le réglage « Autoriser l'intégration dans Home Assistant ». La connexion dans le panneau ne fonctionnera pas tant que le serveur n'est pas mis à jour."
     }
   },
   "device_automation": {
@@ -325,15 +333,20 @@
   "options": {
     "step": {
       "init": {
-        "title": "Rendu des instantanés d'événement",
-        "description": "Mode de rendu des images d'événement (entités « dernier événement » et aperçus). Les modifications s'appliquent immédiatement.",
+        "title": "Options",
+        "description": "Rendu des images d'événement et panneau latéral facultatif. Les modifications s'appliquent immédiatement.",
         "data": {
           "snapshot_bounding_box": "Dessiner les cadres de détection sur les images d'événement",
-          "snapshot_crop": "Recadrer les images d'événement autour de l'objet détecté"
+          "snapshot_crop": "Recadrer les images d'événement autour de l'objet détecté",
+          "sidebar_panel": "Afficher la console web Yunkan dans la barre latérale",
+          "panel_title": "Titre du panneau latéral",
+          "panel_url": "Adresse de la console web pour le panneau (facultatif)"
         },
         "data_description": {
           "snapshot_bounding_box": "Les cadres sont dessinés sur l'instantané par le serveur, comme dans le centre d'événements.",
-          "snapshot_crop": "Zoome sur l'objet détecté avec un peu de contexte autour — pratique pour les aperçus de notification."
+          "snapshot_crop": "Zoome sur l'objet détecté avec un peu de contexte autour — pratique pour les aperçus de notification.",
+          "sidebar_panel": "Intègre la console web comme panneau latéral et active automatiquement « Autoriser l'intégration dans Home Assistant » sur le serveur (compte administrateur requis). Votre navigateur doit pouvoir joindre l'adresse directement ; si Home Assistant est en HTTPS, la console doit l'être aussi.",
+          "panel_url": "Laissez vide pour utiliser l'adresse de connexion. À renseigner seulement si le panneau doit ouvrir une autre adresse, p. ex. votre domaine HTTPS."
         }
       }
     }

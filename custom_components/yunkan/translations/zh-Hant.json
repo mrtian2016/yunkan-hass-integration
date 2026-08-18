@@ -301,6 +301,14 @@
     "pro_required": {
       "title": "需要雲瞰 Pro",
       "description": "此操作需要雲瞰 Pro 授權，但目前伺服器為免費版（狀態：{status}）。升級前 AI 辨識與語音喊話無法使用。"
+    },
+    "embed_not_admin": {
+      "title": "側邊欄面板：伺服器端開關未開啟",
+      "description": "已啟用側邊欄面板，但整合無法在雲瞰伺服器上開啟「允許被 Home Assistant 內嵌」——所配帳號不是管理員。在面板裡登入會一直循環，請在網頁主控台手動開啟該開關（設定 → 遠端即時直播 → 進階），或改用管理員帳號重新設定整合。"
+    },
+    "embed_server_unsupported": {
+      "title": "側邊欄面板：需要升級伺服器",
+      "description": "已啟用側邊欄面板，但所連接的雲瞰伺服器還沒有「允許被 Home Assistant 內嵌」設定。升級伺服器之前，無法在面板裡登入。"
     }
   },
   "device_automation": {
@@ -325,15 +333,20 @@
   "options": {
     "step": {
       "init": {
-        "title": "事件快照渲染",
-        "description": "事件圖片（最新事件實體與快照預覽）的渲染方式。修改立即生效。",
+        "title": "選項",
+        "description": "事件圖片的渲染方式與可選的側邊欄面板。修改立即生效。",
         "data": {
           "snapshot_bounding_box": "在事件圖片上繪製偵測框",
-          "snapshot_crop": "將事件圖片裁剪到偵測目標周邊"
+          "snapshot_crop": "將事件圖片裁剪到偵測目標周邊",
+          "sidebar_panel": "在側邊欄顯示雲瞰網頁主控台",
+          "panel_title": "側邊欄面板標題",
+          "panel_url": "面板使用的主控台位址（可選）"
         },
         "data_description": {
           "snapshot_bounding_box": "由伺服器在快照上繪製偵測框，與事件中心顯示一致。",
-          "snapshot_crop": "放大到偵測目標並保留少量周邊畫面，適合通知預覽一眼看清。"
+          "snapshot_crop": "放大到偵測目標並保留少量周邊畫面，適合通知預覽一眼看清。",
+          "sidebar_panel": "把網頁主控台作為側邊欄面板內嵌，並自動在伺服器上開啟「允許被 Home Assistant 內嵌」（需要管理員帳號）。瀏覽器需能直接存取該位址；Home Assistant 走 HTTPS 時主控台也必須是 HTTPS。",
+          "panel_url": "留空使用連線位址；面板需要用其它位址開啟時才填（例如你的 HTTPS 網域）。"
         }
       }
     }

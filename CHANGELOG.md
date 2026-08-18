@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+Optional sidebar panel embedding the Yunkan web console.
+
+- **The options flow can now add the full Yunkan web console to the Home
+  Assistant sidebar** as an iframe panel, with a configurable title and an
+  optional separate address for the browser (e.g. your HTTPS domain while the
+  integration talks to the LAN address). Enabling the panel also switches on
+  the server-side "Allow embedding in Home Assistant" setting automatically
+  (admin account required; a repair issue explains what to do when the account
+  cannot, or the server predates the setting). The panel points straight at
+  your Yunkan server — the browser must reach that address directly, and an
+  HTTPS Home Assistant needs an HTTPS panel URL (mixed content). See the
+  README for the full checklist.
+
 ## 0.5.1
 
 Fixes setup failing on Home Assistant 2026.8.

@@ -33,6 +33,12 @@ from .const import (
 )
 from .coordinator import YunkanCoordinator
 from .entity import server_device_info
+from .issues import async_clear_embed_issues
+from .panel import (
+    async_ensure_server_embed_retry,
+    async_remove_panel,
+    async_setup_panel,
+)
 from .services import async_setup_services
 from .views import async_register_views
 
@@ -116,6 +122,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: YunkanConfigEntry) -> bo
 
     _async_prune_stale_devices(hass, entry, coordinator)
 
+    # Optional sidebar iframe panel (options flow). Best-effort — see panel.py.
+    # The ensure step flips the server-side "Allow embedding" switch for the
+    # user (admin account) so the panel works without digging through the web
+    # console; when the panel option is off it just clears any repair issues.
+    # It runs as a background task (with retries) so a slow or briefly
+    # unreachable server never delays the event stream below.
+    entry.async_create_background_task(
+        hass,
+        async_ensure_server_embed_retry(hass, entry, client),
+        "yunkan-ensure-embed",
+    )
+    async_setup_panel(hass, entry)
+
     # Start the real-time event stream after platforms are ready to receive it.
     await coordinator.async_start_stream()
 
@@ -127,7 +146,18 @@ async def async_unload_entry(hass: HomeAssistant, entry: YunkanConfigEntry) -> b
     """Unload a config entry."""
     coordinator = entry.runtime_data
     await coordinator.async_stop_stream()
+    async_remove_panel(hass, entry)
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Clean up when the entry is deleted for good.
+
+    HA only auto-removes its own (homeassistant-domain) repair issues on entry
+    removal; ours would survive as orphans pointing at a deleted entry with no
+    code path left to clear them.
+    """
+    async_clear_embed_issues(hass, entry.entry_id)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: YunkanConfigEntry) -> None:

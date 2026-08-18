@@ -83,6 +83,27 @@ class YunkanProRequiredError(YunkanApiError):
         self.license_status = status
 
 
+class YunkanForbiddenError(YunkanApiError):
+    """Raised on a non-license 403 — the account lacks the required role.
+
+    Kept distinct from the generic :class:`YunkanApiError` so callers can tell
+    "this account may not do that" (definitive, act on it) apart from "the
+    server / a proxy hiccuped" (transient, retry) — see panel.py.
+    """
+
+
+def normalize_base_url(raw: str) -> str:
+    """Normalise a user-entered base URL (add scheme, strip trailing slash).
+
+    Scheme detection is case-insensitive: addresses pasted from elsewhere often
+    carry an upper-case ``HTTPS://``, which must not be double-prefixed.
+    """
+    raw = raw.strip()
+    if not raw.lower().startswith(("http://", "https://")):
+        raw = f"http://{raw}"
+    return raw.rstrip("/")
+
+
 class YunkanApiClient:
     """Async REST client bound to a single Yunkan server."""
 
@@ -219,6 +240,8 @@ class YunkanApiClient:
             raise YunkanAuthError(message or "unauthorized")
         if status == 403 and message and message.startswith(LICENSE_REQUIRED_PREFIX):
             raise YunkanProRequiredError(message[len(LICENSE_REQUIRED_PREFIX) :])
+        if status == 403:
+            raise YunkanForbiddenError(message or f"{method} {path} -> HTTP 403")
         if status == 503 and message in ("SYSTEM_IN_SETUP", "SETUP_REQUIRED"):
             raise YunkanSetupRequiredError(message)
         raise YunkanApiError(f"{method} {path} -> HTTP {status}: {message or 'error'}")

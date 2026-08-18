@@ -23,6 +23,7 @@ from .api import (
     YunkanAuthError,
     YunkanConnectionError,
     YunkanSetupRequiredError,
+    normalize_base_url,
 )
 from .const import (
     CONF_BASE_URL,
@@ -30,23 +31,20 @@ from .const import (
     CONF_USERNAME,
     CONF_VERIFY_SSL,
     DEFAULT_BASE_URL,
+    DEFAULT_PANEL_TITLE,
+    DEFAULT_SIDEBAR_PANEL,
     DEFAULT_SNAPSHOT_BBOX,
     DEFAULT_SNAPSHOT_CROP,
     DEFAULT_VERIFY_SSL,
     DOMAIN,
+    OPT_PANEL_TITLE,
+    OPT_PANEL_URL,
+    OPT_SIDEBAR_PANEL,
     OPT_SNAPSHOT_BBOX,
     OPT_SNAPSHOT_CROP,
 )
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def _normalize_base_url(raw: str) -> str:
-    """Normalise a user-entered base URL (add scheme, strip trailing slash)."""
-    raw = raw.strip()
-    if not raw.startswith(("http://", "https://")):
-        raw = f"http://{raw}"
-    return raw.rstrip("/")
 
 
 class YunkanConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -70,7 +68,7 @@ class YunkanConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle the initial connection + login step."""
         errors: dict[str, str] = {}
         if user_input is not None:
-            base_url = _normalize_base_url(user_input[CONF_BASE_URL])
+            base_url = normalize_base_url(user_input[CONF_BASE_URL])
             error = await self._async_try_login(
                 base_url,
                 user_input[CONF_USERNAME],
@@ -171,18 +169,19 @@ class YunkanConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class YunkanOptionsFlow(OptionsFlow):
-    """Options: how event snapshot images are rendered (boxes / crop).
+    """Options: event snapshot rendering + the optional sidebar panel.
 
-    Both options map straight onto the backend snapshot endpoint parameters
-    (``annotate`` / ``crop``); the integration itself does no image work.
-    Saving reloads the entry (see ``_async_update_listener``), so image
-    entities pick the change up immediately.
+    The snapshot toggles map straight onto the backend snapshot endpoint
+    parameters (``annotate`` / ``crop``); the integration itself does no image
+    work. The sidebar panel embeds the Yunkan web console as an iframe panel
+    (see panel.py for its reachability / HTTPS caveats). Saving reloads the
+    entry (see ``_async_update_listener``), so both take effect immediately.
     """
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Single-step form with the two snapshot toggles."""
+        """Single-step form with the snapshot toggles and panel options."""
         if user_input is not None:
             return self.async_create_entry(data=user_input)
         options = self.config_entry.options
@@ -196,6 +195,20 @@ class YunkanOptionsFlow(OptionsFlow):
                     OPT_SNAPSHOT_CROP,
                     default=options.get(OPT_SNAPSHOT_CROP, DEFAULT_SNAPSHOT_CROP),
                 ): bool,
+                vol.Optional(
+                    OPT_SIDEBAR_PANEL,
+                    default=options.get(OPT_SIDEBAR_PANEL, DEFAULT_SIDEBAR_PANEL),
+                ): bool,
+                vol.Optional(
+                    OPT_PANEL_TITLE,
+                    default=options.get(OPT_PANEL_TITLE, DEFAULT_PANEL_TITLE),
+                ): str,
+                # No default on purpose: an empty (cleared) field is simply not
+                # submitted, and panel.py then falls back to the connection URL.
+                vol.Optional(
+                    OPT_PANEL_URL,
+                    description={"suggested_value": options.get(OPT_PANEL_URL, "")},
+                ): str,
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

@@ -55,6 +55,8 @@ server — the integration stores nothing but the connection details.
 - **Services**: `yunkan.ptz` (direction or preset), `yunkan.tts_broadcast`
   (Pro), `yunkan.snapshot` and `yunkan.export` (clip, realtime or timelapse).
 - **Server update** entity that reflects the server's available version.
+- **Sidebar panel** (optional): embed the full Yunkan web console in the Home
+  Assistant sidebar — see [Sidebar panel](#sidebar-panel-embedded-web-console).
 
 ## Requirements
 
@@ -102,6 +104,42 @@ able to reach the Yunkan media plane (UDP/TCP port `23515`) on the server host:
 Live view in the dashboard is WebRTC. Snapshots, recording, casting and still
 previews use HLS and keep working regardless; if the WebRTC media plane can't be
 reached the live card shows an error, so make sure port `23515` is reachable.
+
+## Sidebar panel (embedded web console)
+
+The options flow (Settings → Devices & services → Yunkan → Configure) can add
+the full Yunkan web console to the Home Assistant sidebar. The panel is a plain
+iframe pointing at your Yunkan server — Home Assistant does **not** proxy the
+traffic — so a few things follow from that:
+
+- **Your browser must reach the Yunkan address directly** (same LAN, or
+  Yunkan's own public HTTPS access). The panel does not work through Nabu Casa
+  remote access on its own; Yunkan itself must be reachable from wherever you
+  are browsing.
+- **HTTPS Home Assistant needs an HTTPS panel URL.** Browsers block a
+  plain-HTTP frame inside an HTTPS page as mixed content. Yunkan has built-in
+  public HTTPS access (single public port + automatic Let's Encrypt
+  certificates); put that address into the *Web console address* option.
+- **Signing in inside the panel needs a server-side switch — the integration
+  flips it for you.** Enabling the panel automatically switches on *Allow
+  embedding in Home Assistant* on the server (needs the integration to be
+  configured with an admin account). If the account is not an admin, or the
+  server predates the setting, a repair issue explains what to do — you can
+  always enable it manually in the web console (*Settings → remote live view →
+  advanced*). While the panel option is on, the integration keeps the switch
+  enabled (re-asserting it on reloads); it never turns it off — disable the
+  panel option first, then turn the switch off in the web console. Embedded
+  sign-in only works when the panel URL is HTTPS — over plain HTTP, modern
+  browsers refuse the session cookie inside a frame regardless of the switch.
+- **Two-way talk stays in the full tab.** The sidebar frame is not granted
+  microphone permission, so use the *open in browser* path for talkback.
+  Browsers that block third-party cookies entirely (Safari, Chrome's Incognito
+  mode) also refuse the embedded sign-in — open the console in its own tab
+  there.
+
+Leave the *Web console address* option empty to reuse the connection address;
+set it when the browser should use a different one (typically your HTTPS
+domain while the integration talks to the LAN address).
 
 ## Free tier vs Pro
 

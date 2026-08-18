@@ -320,20 +320,33 @@
     "pro_required": {
       "title": "Yunkan Pro required",
       "description": "This action needs a Yunkan Pro license, but the server is on the free tier (status: {status}). AI detection and voice broadcast remain unavailable until the server is upgraded."
+    },
+    "embed_not_admin": {
+      "title": "Sidebar panel: server switch not enabled",
+      "description": "The sidebar panel is enabled, but the integration could not switch on “Allow embedding in Home Assistant” on the Yunkan server — the configured account has no admin rights. Signing in inside the panel will keep looping until you enable the switch manually in the web console (Settings → remote live view → advanced) or reconfigure the integration with an admin account."
+    },
+    "embed_server_unsupported": {
+      "title": "Sidebar panel: server update required",
+      "description": "The sidebar panel is enabled, but the connected Yunkan server does not have the “Allow embedding in Home Assistant” setting yet. Signing in inside the panel will not work until the server is updated."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Event snapshot rendering",
-        "description": "How event images (latest-event entities and snapshot previews) are rendered. Changes apply immediately.",
+        "title": "Options",
+        "description": "Event image rendering and the optional sidebar panel. Changes apply immediately.",
         "data": {
           "snapshot_bounding_box": "Draw detection boxes on event images",
-          "snapshot_crop": "Crop event images around the detected object"
+          "snapshot_crop": "Crop event images around the detected object",
+          "sidebar_panel": "Show the Yunkan web console in the sidebar",
+          "panel_title": "Sidebar panel title",
+          "panel_url": "Web console address for the panel (optional)"
         },
         "data_description": {
           "snapshot_bounding_box": "Boxes are drawn on the snapshot by the server, like in the event center.",
-          "snapshot_crop": "Zooms in on the detected object with some context around it — handy for notification previews."
+          "snapshot_crop": "Zooms in on the detected object with some context around it — handy for notification previews.",
+          "sidebar_panel": "Embeds the web console as a sidebar panel and automatically switches on “Allow embedding in Home Assistant” on the server (admin account required). Your browser must be able to reach the address directly; when Home Assistant uses HTTPS the console must be HTTPS too.",
+          "panel_url": "Leave empty to use the connection address. Set it when the panel should open a different address, e.g. your HTTPS domain."
         }
       }
     }

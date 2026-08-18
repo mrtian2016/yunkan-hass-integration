@@ -301,6 +301,14 @@
     "pro_required": {
       "title": "需要云瞰 Pro",
       "description": "此操作需要云瞰 Pro 授权，但当前服务器为免费档（状态：{status}）。升级前 AI 识别与语音喊话不可用。"
+    },
+    "embed_not_admin": {
+      "title": "侧边栏面板：服务端开关未开启",
+      "description": "已启用侧边栏面板，但集成无法在云瞰服务器上开启「允许被 Home Assistant 内嵌」——所配账号不是管理员。在面板里登录会一直循环，请在网页控制台手动开启该开关（设置 → 远程实时直播 → 高级），或改用管理员账号重新配置集成。"
+    },
+    "embed_server_unsupported": {
+      "title": "侧边栏面板：需要升级服务器",
+      "description": "已启用侧边栏面板，但所连接的云瞰服务器还没有「允许被 Home Assistant 内嵌」设置。升级服务器之前，无法在面板里登录。"
     }
   },
   "device_automation": {
@@ -325,15 +333,20 @@
   "options": {
     "step": {
       "init": {
-        "title": "事件快照渲染",
-        "description": "事件图片（最新事件实体与快照预览）的渲染方式。修改立即生效。",
+        "title": "选项",
+        "description": "事件图片的渲染方式与可选的侧边栏面板。修改立即生效。",
         "data": {
           "snapshot_bounding_box": "在事件图片上绘制检测框",
-          "snapshot_crop": "将事件图片裁剪到检测目标周边"
+          "snapshot_crop": "将事件图片裁剪到检测目标周边",
+          "sidebar_panel": "在侧边栏显示云瞰网页控制台",
+          "panel_title": "侧边栏面板标题",
+          "panel_url": "面板使用的控制台地址（可选）"
         },
         "data_description": {
           "snapshot_bounding_box": "由服务端在快照上绘制检测框，与事件中心显示一致。",
-          "snapshot_crop": "放大到检测目标并保留少量周边画面，适合通知预览一眼看清。"
+          "snapshot_crop": "放大到检测目标并保留少量周边画面，适合通知预览一眼看清。",
+          "sidebar_panel": "把网页控制台作为侧边栏面板内嵌，并自动在服务器上开启「允许被 Home Assistant 内嵌」（需要管理员账号）。浏览器需能直接访问该地址；Home Assistant 走 HTTPS 时控制台也必须是 HTTPS。",
+          "panel_url": "留空使用连接地址；面板需要用其它地址打开时才填（例如你的 HTTPS 域名）。"
         }
       }
     }

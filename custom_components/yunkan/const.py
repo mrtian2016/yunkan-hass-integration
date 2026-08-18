@@ -26,6 +26,21 @@ OPT_SNAPSHOT_CROP: Final = "snapshot_crop"
 DEFAULT_SNAPSHOT_BBOX: Final = True
 DEFAULT_SNAPSHOT_CROP: Final = False
 
+# Options (entry.options) — sidebar iframe panel embedding the web console.
+# The panel is a plain iframe pointing at the Yunkan origin (no Ingress); the
+# viewer's browser must be able to reach the URL directly. See panel.py.
+OPT_SIDEBAR_PANEL: Final = "sidebar_panel"
+OPT_PANEL_TITLE: Final = "panel_title"
+OPT_PANEL_URL: Final = "panel_url"
+DEFAULT_SIDEBAR_PANEL: Final = False
+DEFAULT_PANEL_TITLE: Final = "Yunkan"
+
+# Server settings dot-path the panel flow manages (see panel.py): issues the
+# session cookie with SameSite=None so signing in inside a cross-site iframe
+# works. Default off server-side; the integration flips it on when the sidebar
+# panel option is enabled.
+SETTING_ALLOW_IFRAME_EMBED: Final = "server.allow_iframe_embed"
+
 # Defaults
 DEFAULT_BASE_URL: Final = "http://homeassistant.local:23406"
 # Verify TLS by default; users with a self-signed LAN certificate can opt out.
