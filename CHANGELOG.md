@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0
 
 Optional sidebar panel embedding the Yunkan web console.
 
