@@ -46,12 +46,21 @@ server — the integration stores nothing but the connection details.
   feature turned off here is off for every camera; the per-camera switches sit
   under it. Motion is server-wide only (per-camera motion is tuned by
   sensitivity / region, not an on/off switch).
+- **One-tap controls on the camera device page**: a **Refresh snapshot**
+  button, **up / down / left / right** and **Stop** buttons for PTZ cameras
+  (a direction starts a continuous move that Stop — or an 8-second safety
+  timer — ends), a **PTZ preset** dropdown listing the camera's own presets,
+  and a **Broadcast message** text field paired with a **Voice broadcast**
+  button. Anything needing free-form input beyond that stays a service.
 - **Birdseye** overview camera (when enabled on the server).
 - **Media browser** to page through recordings by day, recent events and a
   snapshot gallery (with thumbnails), all proxied through Home Assistant's own
   authentication.
 - **Device triggers** — "person detected", "vehicle detected", etc. — for
   building automations from the UI, plus a ready-made notification blueprint.
+- **Device actions** — move the camera, go to a preset, broadcast a message,
+  take a snapshot or export a clip — pickable per camera device in the
+  automation editor's *then do* step.
 - **Services**: `yunkan.ptz` (direction or preset), `yunkan.tts_broadcast`
   (Pro), `yunkan.snapshot` and `yunkan.export` (clip, realtime or timelapse).
 - **Server update** entity that reflects the server's available version.
@@ -60,7 +69,9 @@ server — the integration stores nothing but the connection details.
 
 ## Requirements
 
-- Home Assistant **2024.11** or newer (for native WebRTC cameras).
+- Home Assistant **2024.12** or newer. Native WebRTC cameras arrived in
+  2024.11, but the integration's options flow needs the config entry on the
+  base options flow class, which landed in 2024.12.
 - A reachable Yunkan server. Use its main entry URL (the nginx entry, usually
   port `23406`), for example `http://192.168.1.10:23406` — **not** an internal
   port.
@@ -141,6 +152,19 @@ Leave the *Web console address* option empty to reuse the connection address;
 set it when the browser should use a different one (typically your HTTPS
 domain while the integration talks to the LAN address).
 
+## Options
+
+Settings → Devices & services → Yunkan → **Configure**. Changes apply
+immediately (the entry reloads itself).
+
+| Option | Default | What it does |
+|---|---|---|
+| Draw detection boxes on event images | on | The server draws the detection boxes onto the *latest event* / per-category images, as in the event centre. |
+| Crop event images around the detected object | off | Zooms the same images in on the detected object with a little context — useful for notification previews. |
+| Show the Yunkan web console in the sidebar | off | See [Sidebar panel](#sidebar-panel-embedded-web-console). |
+| Sidebar panel title | Yunkan | Name shown in the sidebar. |
+| Web console address for the panel | *(connection address)* | Address the browser opens for the panel, when it differs from the one the integration talks to. |
+
 ## Free tier vs Pro
 
 Cameras, snapshots, events, sensors, the media browser and PTZ work on any
@@ -175,6 +199,22 @@ data:
   speed: 0.5
   duration: 1
 ```
+
+### Device actions
+
+The same actions are available per camera device in the automation editor
+(*then do* → pick the camera device):
+
+| Device action | Service behind it |
+|---|---|
+| Move the camera | `yunkan.ptz` (direction, speed, duration) |
+| Go to a preset | `yunkan.ptz` (preset, speed) |
+| Voice broadcast | `yunkan.tts_broadcast` (message, voice, rate, pitch) |
+| Take a snapshot | `yunkan.snapshot` (filename) |
+| Export a clip | `yunkan.export` (start, end, playback factor) |
+
+PTZ actions only appear on cameras that support PTZ, and voice broadcast only
+on cameras with a speaker.
 
 ## Automations & notifications
 

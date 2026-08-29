@@ -12,6 +12,7 @@ import logging
 from urllib.parse import urlencode
 
 from aiohttp import web
+from yarl import URL
 
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant, callback
@@ -56,6 +57,16 @@ def _get_coordinator(hass: HomeAssistant, entry_id: str):
     return getattr(entry, "runtime_data", None)
 
 
+def snapshot_path_from_url(snapshot_url: str | None) -> str | None:
+    """Extract the ``path`` query value from an event ``snapshot_url``.
+
+    Shared with media_source, which builds the URLs this view re-checks.
+    """
+    if not snapshot_url:
+        return None
+    return URL(snapshot_url).query.get("path")
+
+
 async def _proxy_bytes(data: bytes | None) -> web.Response:
     """Return a JPEG response for pre-read bytes."""
     if data is None:
@@ -93,30 +104,54 @@ class YunkanEventSnapshotView(HomeAssistantView):
     requires_auth = True
 
     async def get(self, request: web.Request, entry_id: str) -> web.Response:
-        """Return the event snapshot referenced by the ``path`` query param."""
+        """Return the snapshot of the event named by the ``event_id`` param."""
         hass: HomeAssistant = request.app["hass"]
         coordinator = _get_coordinator(hass, entry_id)
         if coordinator is None:
             return web.Response(status=404)
+        event_id = request.query.get("event_id")
         snapshot_path = request.query.get("path")
         # Defence in depth: the backend already blocks traversal, but only ever
         # proxy well-formed event snapshot paths.
         if (
-            not snapshot_path
+            not event_id
+            or not event_id.isdigit()
+            or not snapshot_path
             or not snapshot_path.startswith("events/")
             or ".." in snapshot_path
         ):
             return web.Response(status=400)
+
+        # Scope to a camera this integration exposes, like the two sibling
+        # views: an event snapshot belonging to a hidden camera must not be
+        # reachable by guessing its path. The event id names the owning camera,
+        # and the path must be that same event's own snapshot -- otherwise an
+        # exposed event's id could be paired with a hidden camera's path. An
+        # event carrying no camera id cannot be proven to be in scope, so it is
+        # refused rather than served.
+        try:
+            event = await coordinator.client.async_get_event(int(event_id))
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.debug("event %s resolve failed: %s", event_id, err)
+            return web.Response(status=404)
+        if (
+            not isinstance(event, dict)
+            or event.get("camera_id") not in coordinator.data.cameras
+            or snapshot_path_from_url(event.get("snapshot_url")) != snapshot_path
+        ):
+            return web.Response(status=404)
+
         rel = "/api/events/snapshot?" + urlencode({"path": snapshot_path})
-        event_id = request.query.get("event_id")
         width = request.query.get("w")
-        eid = int(event_id) if event_id and event_id.isdigit() else None
-        # crop=1 crops the snapshot around the detected object (needs event_id).
+        eid = int(event_id)
+        # Rendering is the caller's choice: annotate=1 draws the detection
+        # boxes server-side, crop=1 crops around the detected object.
+        annotate = request.query.get("annotate") == "1"
         crop = request.query.get("crop") == "1"
         data = await coordinator.client.async_event_snapshot(
             rel,
             width=int(width) if width and width.isdigit() else None,
-            annotate_event_id=eid,
+            annotate_event_id=eid if annotate else None,
             crop_event_id=eid if crop else None,
         )
         return await _proxy_bytes(data)

@@ -17,6 +17,11 @@ from homeassistant.config_entries import (
 )
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import (
+    TextSelector,
+    TextSelectorConfig,
+    TextSelectorType,
+)
 
 from .api import (
     YunkanApiClient,
@@ -45,6 +50,12 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# Both credential forms render the password masked; a bare ``str`` would show
+# the Yunkan account password in the clear while it is being typed.
+_PASSWORD_SELECTOR = TextSelector(
+    TextSelectorConfig(type=TextSelectorType.PASSWORD, autocomplete="current-password")
+)
 
 
 class YunkanConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -98,7 +109,7 @@ class YunkanConfigFlow(ConfigFlow, domain=DOMAIN):
                 vol.Required(
                     CONF_USERNAME, default=(user_input or {}).get(CONF_USERNAME, "")
                 ): str,
-                vol.Required(CONF_PASSWORD): str,
+                vol.Required(CONF_PASSWORD): _PASSWORD_SELECTOR,
                 vol.Optional(CONF_VERIFY_SSL, default=DEFAULT_VERIFY_SSL): bool,
             }
         )
@@ -132,7 +143,7 @@ class YunkanConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="reauth_confirm",
-            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
+            data_schema=vol.Schema({vol.Required(CONF_PASSWORD): _PASSWORD_SELECTOR}),
             description_placeholders={
                 CONF_USERNAME: self._reauth_data.get(CONF_USERNAME, ""),
                 CONF_BASE_URL: self._reauth_data.get(CONF_BASE_URL, ""),

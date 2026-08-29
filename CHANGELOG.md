@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+Corrects the declared Home Assistant minimum and closes a gap in the event
+image proxy.
+
+- **The minimum Home Assistant version is now 2024.12.** The options dialog
+  (Configure) reads its settings from the config entry the base options flow
+  class carries, and Home Assistant only moved that onto the base class in
+  2024.12 — on 2024.11 exactly, opening Configure failed. Everything else the
+  integration uses does exist in 2024.11, so this only corrects the version the
+  integration declares; nothing changes for anyone already on 2024.12 or newer.
+- **Event images are now checked against the cameras the integration exposes.**
+  The proxy that serves event images to Home Assistant checked that the address
+  looked like an event image, but not that the event belonged to a camera this
+  integration shows — so a Home Assistant user who guessed an address could see
+  a still from a camera that is switched off or archived on the server. It now
+  looks the event up first and serves the image only when the event's own
+  camera is one of yours, the same check the live snapshot and recording
+  proxies have always done.
+- **The password is masked in the setup and re-authentication forms.** It used
+  to be typed in the clear.
+- **README**: the per-camera buttons (refresh snapshot, PTZ directions and
+  stop, voice broadcast), the preset dropdown, the broadcast text field, the
+  five device actions and all five options are documented now.
+
 ## 0.6.0
 
 Optional sidebar panel embedding the Yunkan web console.

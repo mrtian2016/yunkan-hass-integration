@@ -26,7 +26,7 @@ from homeassistant.components.media_source import (
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, EVENT_CATEGORY_MAP
-from .views import URL_EVENT_SNAPSHOT, URL_RECORDING
+from .views import URL_EVENT_SNAPSHOT, URL_RECORDING, snapshot_path_from_url
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -72,12 +72,14 @@ class YunkanMediaSource(MediaSource):
                 event = await coordinator.client.async_get_event(int(event_id))
             except Exception as err:  # noqa: BLE001
                 raise Unresolvable("Event not found") from err
-            snapshot_path = _snapshot_path(event.get("snapshot_url"))
+            snapshot_path = snapshot_path_from_url(event.get("snapshot_url"))
             if not snapshot_path:
                 raise Unresolvable("Event has no snapshot")
+            # event_id is what the view scopes on; annotate=1 keeps the
+            # detection boxes a full-size event still has always had.
             url = str(
                 URL(URL_EVENT_SNAPSHOT.format(entry_id=entry_id)).with_query(
-                    {"path": snapshot_path, "event_id": event_id}
+                    {"path": snapshot_path, "event_id": event_id, "annotate": 1}
                 )
             )
             return PlayMedia(
@@ -335,12 +337,15 @@ class YunkanMediaSource(MediaSource):
 
     def _event_thumbnail(self, entry_id: str, event: dict) -> str | None:
         """Build a signed thumbnail URL for an event snapshot."""
-        snapshot_path = _snapshot_path(event.get("snapshot_url"))
-        if not snapshot_path:
+        snapshot_path = snapshot_path_from_url(event.get("snapshot_url"))
+        event_id = event.get("id")
+        if not snapshot_path or event_id is None:
             return None
+        # No annotate: thumbnails stay unboxed. The event id is the view's
+        # proof that this snapshot belongs to a camera we expose.
         url = str(
             URL(URL_EVENT_SNAPSHOT.format(entry_id=entry_id)).with_query(
-                {"path": snapshot_path, "w": 320}
+                {"path": snapshot_path, "event_id": event_id, "w": 320}
             )
         )
         return async_sign_path(self.hass, url, _SNAPSHOT_SIGN_TTL)
@@ -369,9 +374,3 @@ def _directory(identifier: str, title: str, children: list) -> BrowseMediaSource
         children_media_class=MediaClass.DIRECTORY,
     )
 
-
-def _snapshot_path(snapshot_url: str | None) -> str | None:
-    """Extract the ``path`` query value from an event ``snapshot_url``."""
-    if not snapshot_url:
-        return None
-    return URL(snapshot_url).query.get("path")

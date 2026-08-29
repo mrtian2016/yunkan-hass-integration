@@ -47,6 +47,10 @@ from . import YunkanConfigEntry
 from .api import YunkanApiError, YunkanConnectionError
 from .const import BIRDSEYE_CAMERA_ID, RTSP_PORT_DEFAULT
 from .coordinator import YunkanCoordinator
+from .entity import YunkanCameraEntity, server_device_info
+from .urls import build_hls_url, build_rtsp_url, build_whep_url, pick_live, pick_stream
+
+_LOGGER = logging.getLogger(__name__)
 
 # RTSP reachability probe cache: {(host, port): (reachable, monotonic_ts)}.
 # One TCP connect per host/port per _RTSP_PROBE_TTL — all cameras of an entry
@@ -83,10 +87,7 @@ async def _rtsp_port_reachable(host: str, port: int) -> bool:
         ok = False
     _rtsp_probe_cache[key] = (ok, now)
     return ok
-from .entity import YunkanCameraEntity, server_device_info
-from .urls import build_hls_url, build_rtsp_url, build_whep_url, pick_live, pick_stream
 
-_LOGGER = logging.getLogger(__name__)
 
 # Reuse a live-grant across the client-config + offer handshake instead of
 # minting one per call. Comfortably shorter than the 1800s server TTL.
