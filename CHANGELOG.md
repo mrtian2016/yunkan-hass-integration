@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.1
 
 Corrects the declared Home Assistant minimum and closes a gap in the event
 image proxy.
