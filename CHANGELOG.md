@@ -1,5 +1,22 @@
 # Changelog
 
+## Unreleased
+
+Restores the camera entities that Home Assistant 2026.9 dropped.
+
+- **All your cameras come back on Home Assistant 2026.9.** On 2026.9 only the
+  first camera of a server kept a working live view; every other one turned
+  into a leftover entity marked "no longer provided by the yunkan integration",
+  and restarting either side did not bring it back. 2026.9 changed how a device
+  says which hub it belongs to, and the warning about the old way was raised in
+  a place that made Home Assistant abandon the camera it was in the middle of
+  creating — which is every camera after the first, because those wait for the
+  server for a moment as they are set up. The integration now uses the new way
+  on cores that have it and the old one on cores that do not, so nothing
+  changes for anyone on an earlier Home Assistant. If you already have leftover
+  camera entities, they start working again on their own after the update; no
+  dashboard changes are needed.
+
 ## 0.6.1
 
 Corrects the declared Home Assistant minimum and closes a gap in the event

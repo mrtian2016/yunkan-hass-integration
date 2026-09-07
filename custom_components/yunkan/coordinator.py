@@ -131,6 +131,9 @@ class YunkanCoordinator(DataUpdateCoordinator[YunkanData]):
         )
         self.client = client
         self.entry = entry
+        # Registry id of the server (hub) device, filled in by async_setup_entry
+        # before the platforms are forwarded; camera devices link to it.
+        self.hub_device_id: str | None = None
         # Most recent event object per camera (fed by SSE, read by image/sensor).
         self.latest_events: dict[str, dict[str, Any]] = {}
         # Per-category live object counts per camera (fed by live-tracks);

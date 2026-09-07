@@ -10,6 +10,22 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, MANUFACTURER
 from .coordinator import YunkanCoordinator
 
+# How a camera device says "I hang off that hub".
+#
+# Home Assistant 2026.9 replaced ``DeviceInfo["via_device"]`` (an identifier
+# tuple) with ``via_device_id`` (the hub's device registry id), and the old key
+# now reports deprecated usage. That report is not a harmless warning for us: it
+# resolves the calling integration by walking the stack, and an entity added
+# *after* the platform's first await no longer has our frames on it, so the
+# report raises MissingIntegrationFrame and the entity is dropped. Cameras await
+# the server in ``async_added_to_hass``, so on 2026.9 every camera but the first
+# disappeared: the device kept all its other entities while the camera entity
+# turned into a "no longer provided by the yunkan integration" leftover.
+#
+# Older cores (down to our declared 2024.12 minimum) only know ``via_device``,
+# so pick by what this core actually accepts rather than by version number.
+_VIA_DEVICE_ID_SUPPORTED = "via_device_id" in DeviceInfo.__annotations__
+
 
 def server_device_info(entry_id: str, base_url: str, version: dict[str, Any]) -> DeviceInfo:
     """Build the device info for the Yunkan server (the config-entry hub)."""
@@ -25,18 +41,30 @@ def server_device_info(entry_id: str, base_url: str, version: dict[str, Any]) ->
     )
 
 
-def camera_device_info(entry_id: str, camera: dict[str, Any]) -> DeviceInfo:
-    """Build the device info for a single camera."""
+def camera_device_info(
+    entry_id: str, camera: dict[str, Any], hub_device_id: str | None = None
+) -> DeviceInfo:
+    """Build the device info for a single camera.
+
+    ``hub_device_id`` is the registry id of the server (hub) device, which cores
+    that link devices by id need. It is unknown until that device exists; a
+    camera without the hub link is merely shown un-nested, never broken.
+    """
     camera_id = camera["id"]
-    return DeviceInfo(
+    info = DeviceInfo(
         identifiers={(DOMAIN, f"{entry_id}_{camera_id}")},
         name=camera.get("name") or camera_id,
         manufacturer=camera.get("manufacturer") or MANUFACTURER,
         model=camera.get("model") or camera.get("source_type"),
         sw_version=camera.get("firmware_version"),
         serial_number=camera.get("serial_number"),
-        via_device=(DOMAIN, entry_id),
     )
+    if _VIA_DEVICE_ID_SUPPORTED:
+        if hub_device_id is not None:
+            info["via_device_id"] = hub_device_id  # type: ignore[typeddict-unknown-key]
+    else:
+        info["via_device"] = (DOMAIN, entry_id)  # type: ignore[typeddict-unknown-key]
+    return info
 
 
 class YunkanCameraEntity(CoordinatorEntity[YunkanCoordinator]):
@@ -58,7 +86,11 @@ class YunkanCameraEntity(CoordinatorEntity[YunkanCoordinator]):
     @property
     def device_info(self) -> DeviceInfo:
         """Return the camera device info."""
-        return camera_device_info(self._entry_id, self._camera or {"id": self._camera_id})
+        return camera_device_info(
+            self._entry_id,
+            self._camera or {"id": self._camera_id},
+            self.coordinator.hub_device_id,
+        )
 
     @property
     def available(self) -> bool:

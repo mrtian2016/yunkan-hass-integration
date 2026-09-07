@@ -104,12 +104,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: YunkanConfigEntry) -> bo
 
     entry.runtime_data = coordinator
 
-    # Register the server (hub) device so per-camera devices can reference it as
-    # their via_device.
-    dr.async_get(hass).async_get_or_create(
+    # Register the server (hub) device so per-camera devices can hang off it, and
+    # remember its registry id — that is how newer cores want the link expressed
+    # (see camera_device_info). This must stay ahead of the platform forwarding
+    # below, or the first batch of cameras would be created un-nested.
+    hub_device = dr.async_get(hass).async_get_or_create(
         config_entry_id=entry.entry_id,
         **server_device_info(entry.entry_id, client.base_url, coordinator.data.version),
     )
+    coordinator.hub_device_id = hub_device.id
 
     # Register the HA-authenticated proxy views and services once, globally.
     async_register_views(hass)
