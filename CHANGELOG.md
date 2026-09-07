@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.2
 
 Restores the camera entities that Home Assistant 2026.9 dropped.
 
