@@ -1,5 +1,47 @@
 # Changelog
 
+## Unreleased
+
+Connecting no longer asks for your Yunkan password.
+
+- **You now sign in on the Yunkan server itself.** Adding the integration asks
+  only for the server address; Home Assistant then opens the Yunkan sign-in page
+  in a new window, and pressing Authorize there sends Home Assistant back a
+  long-lived API token. Whatever way you normally sign in works — password,
+  one-time code, passkey or single sign-on — and an account with two-step
+  verification turned on can be used at last, which it could not be before. The
+  password never reaches Home Assistant, and you can withdraw the integration's
+  access at any time from the API Token page on the server.
+- **Re-authenticating takes the same route.** An existing setup that still
+  stores a password keeps working; the next time it asks you to re-authenticate
+  against an updated server, it swaps the password for a token and forgets the
+  password.
+- **Older servers still ask for a username and password.** A Yunkan server
+  without the authorization page falls back to the form the integration has
+  always shown. Two-step verification needs a newer server.
+- **A password is still an option when the authorization page will not open.**
+  The address step and the re-authorization step both have a "Sign in with a
+  username and password instead" box. It is there for what the authorization
+  page cannot cover — a certificate your browser refuses, or a Yunkan server
+  your browser cannot reach from where you are — which would otherwise leave
+  you with a window that never comes back and no way past it. An account with
+  two-step verification turned on still cannot sign in with a password, and now
+  says so plainly instead of reporting an unexpected error.
+- **The authorization page is no longer sent to an address you are not using.**
+  When Home Assistant could not tell which of its own addresses your browser
+  was on, it fell back to whichever one was configured — possibly one your
+  browser cannot reach, which showed up much later as a window that never came
+  back. It now uses a configured address only when that is the one you are on,
+  and otherwise says it does not know its own address, which is something you
+  can act on.
+- **Withdrawn access now asks to be authorized again.** If the integration's
+  token was revoked on the server, the event stream kept reconnecting and being
+  refused, filling the log while everything looked fine. It stops and asks you
+  to authorize again instead.
+- **An authorization link is spent once it has been used.** Reopening or
+  refreshing the "you can close this window" page no longer reaches the setup
+  in progress.
+
 ## 0.6.2
 
 Restores the camera entities that Home Assistant 2026.9 dropped.

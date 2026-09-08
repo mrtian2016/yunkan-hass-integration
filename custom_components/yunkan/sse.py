@@ -5,6 +5,11 @@ keeps a long-lived ``GET /api/events/stream`` connection open and forwards each
 decoded detection event to a callback. Because the stream ticket is a 60-second
 JWT, a fresh ticket is fetched on every (re)connect. Reconnects use exponential
 backoff so a bounced backend does not hammer the server.
+
+Rejected credentials are the one failure that is not worth retrying: a revoked
+API token answers ``401`` forever, and backing off only turns that into an
+endless trickle of failures in the log while the entry looks healthy. The loop
+stops and asks for re-authentication instead.
 """
 
 from __future__ import annotations
@@ -17,9 +22,10 @@ import time
 
 import aiohttp
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .api import YunkanApiClient, YunkanApiError
+from .api import YunkanApiClient, YunkanApiError, YunkanAuthError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,11 +42,16 @@ class YunkanSSEClient:
     """Consume the Yunkan SSE event stream in the background."""
 
     def __init__(
-        self, hass: HomeAssistant, client: YunkanApiClient, on_event: EventCallback
+        self,
+        hass: HomeAssistant,
+        client: YunkanApiClient,
+        entry: ConfigEntry,
+        on_event: EventCallback,
     ) -> None:
-        """Store the REST client and the per-event async callback."""
+        """Store the REST client, the owning entry and the event callback."""
         self._hass = hass
         self._client = client
+        self._entry = entry
         self._on_event = on_event
         self._task: asyncio.Task | None = None
         self._closing = False
@@ -88,6 +99,19 @@ class YunkanSSEClient:
                 backoff = _BACKOFF_START
             except asyncio.CancelledError:
                 raise
+            except YunkanAuthError as err:
+                # The credential itself was refused, which no amount of waiting
+                # fixes. Hand it to the re-auth flow and leave: the entry is
+                # reloaded (with a new client and a new loop) once the user has
+                # authorized again.
+                self._connected = False
+                _LOGGER.warning(
+                    "Yunkan rejected the event stream credential (%s); "
+                    "asking for re-authentication",
+                    err,
+                )
+                self._entry.async_start_reauth(self._hass)
+                break
             except (YunkanApiError, aiohttp.ClientError, TimeoutError, OSError) as err:
                 self._connected = False
                 _LOGGER.debug("SSE connection dropped: %s; retrying in %.0fs", err, backoff)
@@ -121,6 +145,10 @@ class YunkanSSEClient:
         async with self._client._session.get(  # noqa: SLF001
             url, headers=headers, timeout=timeout
         ) as resp:
+            if resp.status == 401:
+                # Same meaning as a 401 on any other call: the credential is
+                # gone, not the server. _run stops the loop over this one.
+                raise YunkanAuthError("SSE stream returned HTTP 401")
             if resp.status != 200:
                 raise YunkanApiError(f"SSE stream returned HTTP {resp.status}")
             self._connected = True

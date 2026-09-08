@@ -3,19 +3,41 @@
     "step": {
       "user": {
         "title": "连接云瞰",
-        "description": "填写云瞰服务器地址和登录账号。请使用 nginx 入口（通常为 23406 端口），不要填内部端口。",
+        "description": "填写云瞰服务器地址。请使用 nginx 入口（通常为 23406 端口），不要填内部端口。下一步在云瞰服务器上登录并授权。",
         "data": {
           "base_url": "服务器地址",
-          "username": "用户名",
-          "password": "密码",
-          "verify_ssl": "校验 SSL 证书"
+          "verify_ssl": "校验 SSL 证书",
+          "use_password": "改用账号密码登录"
         },
         "data_description": {
           "base_url": "服务器的主入口地址，含端口（通常 23406）。",
-          "verify_ssl": "局域网自签名证书请关闭此项"
+          "verify_ssl": "局域网自签名证书请关闭此项",
+          "use_password": "浏览器打不开云瞰授权页时勾选——例如证书被拦下，或从这里访问不到服务器。"
+        }
+      },
+      "handoff": {
+        "title": "授权 Home Assistant",
+        "description": "新窗口会打开云瞰登录页。用你平时的方式登录并点「授权」，这一步会自动继续。如果窗口没打开、或者页面加载不出来，请关掉这个对话框重新开始，并勾选「改用账号密码登录」。"
+      },
+      "credentials": {
+        "title": "登录云瞰",
+        "description": "用云瞰账号和密码登录 {base_url}。开启了二次验证的账号无法用密码登录——只能在云瞰页面上授权，而较旧的服务器没有这个页面。",
+        "data": {
+          "username": "用户名",
+          "password": "密码"
         }
       },
       "reauth_confirm": {
+        "title": "重新授权云瞰",
+        "description": "Home Assistant 需要重新获得 {base_url} 的授权。继续后会跳转到云瞰登录。",
+        "data": {
+          "use_password": "改用账号密码登录"
+        },
+        "data_description": {
+          "use_password": "浏览器打不开云瞰授权页时勾选——例如证书被拦下，或从这里访问不到服务器。"
+        }
+      },
+      "reauth_password": {
         "title": "重新登录云瞰",
         "description": "请输入 {username} 在 {base_url} 上的当前密码。",
         "data": {
@@ -26,7 +48,11 @@
     "error": {
       "cannot_connect": "连接失败。请检查服务器地址，并确认服务器正在运行。",
       "invalid_auth": "用户名或密码错误。",
+      "mfa_required": "该账号开启了二次验证，只填密码登录不了。请返回上一步、不要勾选「改用账号密码登录」，改在云瞰页面上授权。",
       "setup_required": "云瞰服务器尚未完成首次初始化。请先打开云瞰网页端创建管理员账号，再重试。",
+      "no_url": "Home Assistant 不知道自己的访问地址，云瞰无法把你送回来。请先在「设置 → 系统 → 网络」里填写内部或外部地址，再重试。",
+      "handoff_failed": "授权失败，可能是授权码已过期。请重试。",
+      "access_denied": "已在云瞰页面上取消授权。",
       "unknown": "发生未知错误。"
     },
     "abort": {

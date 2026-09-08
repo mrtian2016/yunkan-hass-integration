@@ -93,7 +93,19 @@ in HACS, install **Yunkan**, then restart Home Assistant. Or add it manually:
    **Integration**.
 2. Search for **Yunkan**, install it, and restart Home Assistant.
 3. Go to **Settings → Devices & Services → Add Integration → Yunkan** and enter
-   your server URL, username and password.
+   your server address. Home Assistant then opens the Yunkan sign-in page in a
+   new window; sign in the way you normally do and press **Authorize**. Yunkan
+   hands Home Assistant an API token, so your password stays on the server and
+   an account with two-factor authentication works like any other.
+
+   Older Yunkan servers have no authorization page and ask for a username and
+   password instead, exactly as before. Those accounts cannot have two-factor
+   authentication turned on — update the server first.
+
+   If your browser cannot open the authorization page at all — a certificate it
+   refuses, or a Yunkan server it cannot reach from where you are — tick **Sign
+   in with a username and password instead** on the first step to go straight to
+   the password form.
 
 ### Manual
 

@@ -7,7 +7,7 @@ from typing import Any
 from homeassistant.core import HomeAssistant
 
 from . import YunkanConfigEntry
-from .const import CONF_PASSWORD
+from .const import CONF_API_TOKEN, CONF_PASSWORD
 
 _REDACTED = "**REDACTED**"
 
@@ -15,6 +15,7 @@ _REDACTED = "**REDACTED**"
 TO_REDACT = frozenset(
     {
         CONF_PASSWORD,
+        CONF_API_TOKEN,
         "access_token",
         "token",
         "rtsp_main",

@@ -142,7 +142,7 @@ class YunkanCoordinator(DataUpdateCoordinator[YunkanData]):
         # Draft TTS message per camera, shared by the message text entity (writer)
         # and the Broadcast button (reader) so users can test voice broadcast.
         self.tts_messages: dict[str, str] = {}
-        self.sse = YunkanSSEClient(hass, client, self._handle_event)
+        self.sse = YunkanSSEClient(hass, client, entry, self._handle_event)
         self._tracks_clients: dict[str, YunkanTracksClient] = {}
         self._tracks_started = False
         self._unsub_reconcile: CALLBACK_TYPE | None = None

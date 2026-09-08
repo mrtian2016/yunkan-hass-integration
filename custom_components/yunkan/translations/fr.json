@@ -3,19 +3,41 @@
     "step": {
       "user": {
         "title": "Connexion à Yunkan",
-        "description": "Saisissez l'adresse de votre serveur Yunkan et un compte pour vous connecter. Utilisez l'entrée nginx (généralement le port 23406), pas un port interne.",
+        "description": "Saisissez l'adresse de votre serveur Yunkan. Utilisez l'entrée nginx (généralement le port 23406), pas un port interne. Vous vous connecterez sur le serveur Yunkan à l'étape suivante.",
         "data": {
           "base_url": "URL du serveur",
-          "username": "Nom d'utilisateur",
-          "password": "Mot de passe",
-          "verify_ssl": "Vérifier le certificat SSL"
+          "verify_ssl": "Vérifier le certificat SSL",
+          "use_password": "Se connecter plutôt avec un nom d'utilisateur et un mot de passe"
         },
         "data_description": {
           "base_url": "L'adresse d'entrée principale du serveur, avec le port (généralement 23406).",
-          "verify_ssl": "Désactivez pour un certificat auto-signé sur votre réseau local"
+          "verify_ssl": "Désactivez pour un certificat auto-signé sur votre réseau local",
+          "use_password": "À utiliser lorsque votre navigateur ne peut pas ouvrir la page d'autorisation Yunkan : certificat refusé, ou serveur inaccessible depuis ici."
+        }
+      },
+      "handoff": {
+        "title": "Autoriser Home Assistant",
+        "description": "Une nouvelle fenêtre ouvre la page de connexion Yunkan. Connectez-vous comme d'habitude et appuyez sur « Autoriser » ; cette page continue toute seule. Si la fenêtre ne s'ouvre pas ou si la page ne se charge pas, fermez cette boîte de dialogue et recommencez en cochant « Se connecter plutôt avec un nom d'utilisateur et un mot de passe »."
+      },
+      "credentials": {
+        "title": "Connexion à Yunkan",
+        "description": "Connectez-vous à {base_url} avec un compte et un mot de passe Yunkan. Un compte avec la validation en deux étapes activée ne peut pas se connecter ainsi : il doit être autorisé sur la page Yunkan, que les serveurs plus anciens n'ont pas.",
+        "data": {
+          "username": "Nom d'utilisateur",
+          "password": "Mot de passe"
         }
       },
       "reauth_confirm": {
+        "title": "Ré-autoriser Yunkan",
+        "description": "Home Assistant doit être autorisé à nouveau sur {base_url}. Continuez pour vous connecter sur le serveur Yunkan.",
+        "data": {
+          "use_password": "Se connecter plutôt avec un nom d'utilisateur et un mot de passe"
+        },
+        "data_description": {
+          "use_password": "À utiliser lorsque votre navigateur ne peut pas ouvrir la page d'autorisation Yunkan : certificat refusé, ou serveur inaccessible depuis ici."
+        }
+      },
+      "reauth_password": {
         "title": "Ré-authentification Yunkan",
         "description": "Saisissez le mot de passe actuel de {username} sur {base_url}.",
         "data": {
@@ -26,7 +48,11 @@
     "error": {
       "cannot_connect": "Échec de la connexion. Vérifiez l'URL du serveur et qu'il est bien démarré.",
       "invalid_auth": "Nom d'utilisateur ou mot de passe invalide.",
+      "mfa_required": "Ce compte utilise la validation en deux étapes, qu'un mot de passe seul ne peut pas satisfaire. Revenez en arrière et laissez « Se connecter plutôt avec un nom d'utilisateur et un mot de passe » décoché, afin d'autoriser sur la page Yunkan.",
       "setup_required": "Le serveur Yunkan n'a pas terminé sa configuration initiale. Ouvrez d'abord l'interface web de Yunkan et créez un compte administrateur, puis réessayez.",
+      "no_url": "Home Assistant ne connaît pas sa propre adresse, Yunkan ne peut donc pas vous renvoyer ici. Renseignez l'adresse interne ou externe dans Paramètres > Système > Réseau, puis réessayez.",
+      "handoff_failed": "Échec de l'autorisation. Le code a peut-être expiré — réessayez.",
+      "access_denied": "L'autorisation a été annulée sur la page Yunkan.",
       "unknown": "Erreur inattendue."
     },
     "abort": {

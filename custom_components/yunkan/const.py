@@ -11,11 +11,25 @@ CONF_BASE_URL: Final = "base_url"
 CONF_USERNAME: Final = "username"
 CONF_PASSWORD: Final = "password"
 CONF_VERIFY_SSL: Final = "verify_ssl"
+# Long-lived API token obtained through the authorization handoff. Entries
+# created that way carry no password: the username is kept for display only.
+CONF_API_TOKEN: Final = "api_token"
+# Form-only checkbox (never stored): "sign in with an account and password
+# instead". The handoff needs the user's browser to reach both Home Assistant
+# and the Yunkan authorization page, which is not always true even when the
+# server offers it — a self-signed certificate the browser blocks, a Home
+# Assistant on the internet with Yunkan only on the LAN, a web console that is
+# down while the API is up. Ticking the box skips straight to the password
+# form so those users are not stranded on a page that never comes back.
+CONF_USE_PASSWORD: Final = "use_password"
 
 # Runtime data / hass.data keys
 DATA_CLIENT: Final = "client"
 DATA_COORDINATOR: Final = "coordinator"
 DATA_SSE: Final = "sse"
+# hass.data[DOMAIN] key: pending handoff ``state`` -> config flow id. The
+# callback view uses it to find the flow the browser redirect belongs to.
+DATA_HANDOFF_FLOWS: Final = "handoff_flows"
 
 # Options (entry.options) — event snapshot rendering for image entities.
 # Server-side processing on the backend snapshot endpoint: bounding boxes are
@@ -52,6 +66,24 @@ DEFAULT_VERIFY_SSL: Final = True
 API_SETUP_STATUS: Final = "/api/auth/setup-status"
 API_LOGIN: Final = "/api/auth/login"
 API_ME: Final = "/api/auth/me"
+
+# Authorization handoff: instead of collecting the account password, the config
+# flow sends the user to the server's authorization page, they approve there
+# with whatever sign-in method their account uses (password, one-time code,
+# passkey, SSO) and the server redirects back with a one-time code the flow
+# trades for a long-lived API token.
+#
+# ``config`` tells us whether the server is new enough to offer this at all;
+# servers that predate it have no such route and the flow falls back to asking
+# for a username and password. Both endpoints are unauthenticated.
+API_HANDOFF_CONFIG: Final = "/api/auth/handoff/config"
+API_HANDOFF_EXCHANGE: Final = "/api/auth/handoff/exchange"
+# The authorization page itself is a web page, not an API endpoint.
+HANDOFF_AUTHORIZE_PATH: Final = "/authorize"
+# Client name shown to the user on that page ("<name> wants to access ...").
+HANDOFF_CLIENT_NAME: Final = "Home Assistant"
+# Where the authorization page sends the browser back to (see handoff.py).
+HANDOFF_CALLBACK_PATH: Final = "/api/yunkan/authorize"
 API_LICENSE_STATUS: Final = "/api/license/status"
 API_SYSTEM_VERSION: Final = "/api/system/version"
 API_HEALTHZ: Final = "/healthz"

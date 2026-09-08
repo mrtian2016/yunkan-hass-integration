@@ -14,8 +14,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import config_validation as cv, device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.typing import ConfigType
 
 from .api import (
     YunkanApiClient,
@@ -24,6 +25,7 @@ from .api import (
     YunkanSetupRequiredError,
 )
 from .const import (
+    CONF_API_TOKEN,
     CONF_BASE_URL,
     CONF_PASSWORD,
     CONF_USERNAME,
@@ -33,6 +35,7 @@ from .const import (
 )
 from .coordinator import YunkanCoordinator
 from .entity import server_device_info
+from .handoff import async_register_handoff_view
 from .issues import async_clear_embed_issues
 from .panel import (
     async_ensure_server_embed_retry,
@@ -45,6 +48,11 @@ from .views import async_register_views
 _LOGGER = logging.getLogger(__name__)
 
 type YunkanConfigEntry = ConfigEntry[YunkanCoordinator]
+
+# The integration is configured entirely through its config flow. Declaring
+# that makes Home Assistant reject (rather than silently ignore) a "yunkan:"
+# block in configuration.yaml, and tells it this async_setup takes no config.
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -78,20 +86,34 @@ def _async_prune_stale_devices(
             device_registry.async_remove_device(device.id)
 
 
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Register the authorization callback view.
+
+    The config flow registers it too, because HA does not run this before a
+    first-ever config flow; this covers every later start, when the view has to
+    be back in place before a reauth can use it.
+    """
+    async_register_handoff_view(hass)
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: YunkanConfigEntry) -> bool:
     """Set up Yunkan from a config entry."""
     session = async_get_clientsession(
         hass, verify_ssl=entry.data.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL)
     )
+    # Entries made through the authorization handoff carry an API token and no
+    # password; entries made against an older server carry the credentials.
     client = YunkanApiClient(
         session,
         entry.data[CONF_BASE_URL],
-        entry.data[CONF_USERNAME],
-        entry.data[CONF_PASSWORD],
+        entry.data.get(CONF_USERNAME, ""),
+        entry.data.get(CONF_PASSWORD, ""),
+        api_token=entry.data.get(CONF_API_TOKEN),
     )
 
     try:
-        await client.async_login()
+        await client.async_authenticate()
     except YunkanAuthError as err:
         raise ConfigEntryAuthFailed(str(err)) from err
     except YunkanSetupRequiredError as err:

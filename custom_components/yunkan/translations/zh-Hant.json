@@ -3,19 +3,41 @@
     "step": {
       "user": {
         "title": "連線雲瞰",
-        "description": "填寫雲瞰伺服器位址與登入帳號。請使用 nginx 入口（通常為 23406 連接埠），不要填入內部連接埠。",
+        "description": "填寫雲瞰伺服器位址。請使用 nginx 入口（通常為 23406 連接埠），不要填入內部連接埠。下一步會在雲瞰伺服器上登入並授權。",
         "data": {
           "base_url": "伺服器位址",
-          "username": "使用者名稱",
-          "password": "密碼",
-          "verify_ssl": "驗證 SSL 憑證"
+          "verify_ssl": "驗證 SSL 憑證",
+          "use_password": "改用帳號密碼登入"
         },
         "data_description": {
           "base_url": "伺服器的主入口位址，含連接埠（通常 23406）。",
-          "verify_ssl": "區域網路自簽憑證請關閉此項"
+          "verify_ssl": "區域網路自簽憑證請關閉此項",
+          "use_password": "瀏覽器打不開雲瞰授權頁時勾選——例如憑證被攔下，或從這裡連不到伺服器。"
+        }
+      },
+      "handoff": {
+        "title": "授權 Home Assistant",
+        "description": "新視窗會開啟雲瞰登入頁。用你平常的方式登入並按「授權」，這一步會自動繼續。若視窗沒有開啟、或頁面載入不出來，請關閉這個對話框重新開始，並勾選「改用帳號密碼登入」。"
+      },
+      "credentials": {
+        "title": "登入雲瞰",
+        "description": "以雲瞰帳號和密碼登入 {base_url}。已開啟二次驗證的帳號無法用密碼登入——只能在雲瞰頁面上授權，而較舊的伺服器沒有這個頁面。",
+        "data": {
+          "username": "使用者名稱",
+          "password": "密碼"
         }
       },
       "reauth_confirm": {
+        "title": "重新授權雲瞰",
+        "description": "Home Assistant 需要重新取得 {base_url} 的授權。繼續後會前往雲瞰登入頁。",
+        "data": {
+          "use_password": "改用帳號密碼登入"
+        },
+        "data_description": {
+          "use_password": "瀏覽器打不開雲瞰授權頁時勾選——例如憑證被攔下，或從這裡連不到伺服器。"
+        }
+      },
+      "reauth_password": {
         "title": "重新登入雲瞰",
         "description": "請輸入 {username} 在 {base_url} 上的目前密碼。",
         "data": {
@@ -26,7 +48,11 @@
     "error": {
       "cannot_connect": "連線失敗。請檢查伺服器位址，並確認伺服器正在執行。",
       "invalid_auth": "使用者名稱或密碼錯誤。",
+      "mfa_required": "此帳號已開啟二次驗證，只填密碼無法登入。請返回上一步、不要勾選「改用帳號密碼登入」，改在雲瞰頁面上授權。",
       "setup_required": "雲瞰伺服器尚未完成首次初始化。請先開啟雲瞰網頁端建立管理員帳號後再試。",
+      "no_url": "Home Assistant 不知道自己的存取位址，雲瞰無法將你導回這裡。請先於「設定 → 系統 → 網路」填寫內部或外部位址後再試。",
+      "handoff_failed": "授權失敗，可能是授權碼已過期。請重試。",
+      "access_denied": "已在雲瞰頁面上取消授權。",
       "unknown": "發生未知錯誤。"
     },
     "abort": {
