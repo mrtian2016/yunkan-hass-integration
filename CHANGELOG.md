@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0
 
 Connecting no longer asks for your Yunkan password.
 
